@@ -1,121 +1,106 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react"
 
 function App() {
-  const [count, setCount] = useState(0)
+  const ingresos = 1800
+
+  const [gastos, setGastos] = useState([])
+  const [nombre, setNombre] = useState("")
+  const [valor, setValor] = useState("")
+
+  useEffect(() => {
+    cargarGastos()
+  }, [])
+
+  async function cargarGastos() {
+    const respuesta = await fetch("http://localhost:3000/api/gastos")
+    const datos = await respuesta.json()
+
+    setGastos(datos)
+  }
+
+  async function agregarGasto() {
+    if (!nombre || !valor) {
+      return
+    }
+
+    const respuesta = await fetch("http://localhost:3000/api/gastos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        nombre,
+        valor: Number(valor)
+      })
+    })
+
+    const nuevoGasto = await respuesta.json()
+
+    setGastos([...gastos, nuevoGasto])
+
+    setNombre("")
+    setValor("")
+  }
+
+  async function eliminarGasto(id) {
+    await fetch(`http://localhost:3000/api/gastos/${id}`, {
+      method: "DELETE"
+    })
+
+    setGastos(gastos.filter(gasto => gasto.id !== id))
+  }
+
+  const gastosTotal = gastos.reduce(
+    (acumulado, gasto) => acumulado + gasto.valor,
+    0
+  )
+
+  const saldo = ingresos - gastosTotal
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div>
+      <h1>Finance App</h1>
 
-      <div className="ticks"></div>
+      <h2>Resumen</h2>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <p>Saldo: ${saldo}</p>
+      <p>Ingresos: ${ingresos}</p>
+      <p>Gastos: ${gastosTotal}</p>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <h2>Agregar gasto</h2>
+
+      <input
+        type="text"
+        placeholder="Nombre del gasto"
+        value={nombre}
+        onChange={(e) => setNombre(e.target.value)}
+      />
+
+      <input
+        type="number"
+        placeholder="Valor"
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+      />
+
+      <button onClick={agregarGasto}>
+        Agregar
+      </button>
+
+      <h2>Últimos gastos</h2>
+
+      {gastos.map(gasto => (
+        <div key={gasto.id}>
+          <span>
+            {gasto.nombre} - ${gasto.valor}
+          </span>
+
+          <button onClick={() => eliminarGasto(gasto.id)}>
+            Eliminar
+          </button>
+        </div>
+      ))}
+    </div>
   )
 }
 
