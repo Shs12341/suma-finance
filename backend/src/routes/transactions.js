@@ -1,8 +1,10 @@
 const express = require("express")
 const pool = require("../db")
-const getDemoUserId = require("../demoUser")
+const requireAuth = require("../middleware/auth")
 
 const router = express.Router()
+
+router.use(requireAuth)
 
 
 function normalizeTransaction(row) {
@@ -73,9 +75,9 @@ function validatePayload(payload) {
   }
 }
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
-    const userId = await getDemoUserId()
+    const userId = req.user.id
     const result = await pool.query(
       `
         SELECT
@@ -96,14 +98,13 @@ router.get("/", async (req, res) => {
 
     res.json(result.rows.map(normalizeTransaction))
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: "Error al obtener transacciones" })
+    next(error)
   }
 })
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
-    const userId = await getDemoUserId()
+    const userId = req.user.id
     const validation = validatePayload(req.body)
 
     if (validation.error) {
@@ -139,14 +140,13 @@ router.post("/", async (req, res) => {
       })
     )
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: "Error al crear transacción" })
+    next(error)
   }
 })
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", async (req, res, next) => {
   try {
-    const userId = await getDemoUserId()
+    const userId = req.user.id
     const id = Number(req.params.id)
 
     if (!Number.isInteger(id) || id <= 0) {
@@ -215,14 +215,13 @@ router.patch("/:id", async (req, res) => {
       })
     )
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: "Error al actualizar transacción" })
+    next(error)
   }
 })
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   try {
-    const userId = await getDemoUserId()
+    const userId = req.user.id
     const id = Number(req.params.id)
 
     if (!Number.isInteger(id) || id <= 0) {
@@ -240,8 +239,7 @@ router.delete("/:id", async (req, res) => {
 
     res.status(204).send()
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: "Error al eliminar transacción" })
+    next(error)
   }
 })
 

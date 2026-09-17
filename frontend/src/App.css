@@ -2,6 +2,8 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #18212f;
   background: #f4f6f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -11,6 +13,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100vh;
   background: #f4f6f8;
 }
 
@@ -28,26 +31,6 @@ select {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
-}
-
-.app-shell {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 48px 0 64px;
-}
-
-.topbar,
-.section-heading,
-.transaction-row,
-.form-row {
-  display: flex;
-  align-items: center;
-}
-
-.topbar {
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
 }
 
 h1,
@@ -70,20 +53,212 @@ h2 {
 
 .eyebrow {
   margin-bottom: 7px;
+  color: #6b7280;
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #6b7280;
 }
 
-.status-pill {
-  padding: 8px 12px;
-  border: 1px solid #d9dee5;
+.loading-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  color: #69717d;
+}
+
+.loading-screen p {
+  margin: 0;
+}
+
+.loading-mark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 15px;
+  background: #172033;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+/* Authentication */
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  align-items: center;
+  padding: 48px 24px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(49, 63, 91, 0.11), transparent 34%),
+    #f4f6f8;
+}
+
+.auth-layout {
+  display: grid;
+  width: min(1060px, 100%);
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.72fr);
+  gap: clamp(48px, 8vw, 100px);
+  align-items: center;
+}
+
+.auth-intro h1 {
+  max-width: 660px;
+  font-size: clamp(3rem, 7vw, 5.8rem);
+  line-height: 0.95;
+}
+
+.auth-copy {
+  max-width: 590px;
+  margin: 28px 0 0;
+  color: #68717d;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.auth-feature-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 30px;
+}
+
+.auth-feature-row span {
+  padding: 8px 11px;
+  border: 1px solid #d8dde4;
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.72);
   color: #5f6773;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.auth-card {
+  padding: 28px;
+  border: 1px solid #dfe4ea;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(26, 35, 51, 0.09);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f2f4f7;
+}
+
+.auth-tabs button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #6b7380;
+  font-weight: 800;
+}
+
+.auth-tabs button.active {
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 2px 8px rgba(30, 39, 56, 0.08);
+}
+
+.auth-card-heading {
+  margin: 30px 0 22px;
+}
+
+.auth-form,
+.transaction-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form label,
+.transaction-form label {
+  display: grid;
+  gap: 7px;
+  color: #4e5662;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.auth-form input,
+.transaction-form input,
+.transaction-form select,
+.filter-select {
+  width: 100%;
+  border: 1px solid #d8dde4;
+  border-radius: 10px;
+  background: #fff;
+  color: #18212f;
+  outline: none;
+}
+
+.auth-form input,
+.transaction-form input,
+.transaction-form select {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.auth-form input:focus,
+.transaction-form input:focus,
+.transaction-form select:focus,
+.filter-select:focus {
+  border-color: #8492a6;
+  box-shadow: 0 0 0 3px rgba(132, 146, 166, 0.14);
+}
+
+.auth-footnote {
+  margin: 20px 0 0;
+  color: #8a929d;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+/* Dashboard */
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.topbar,
+.section-heading,
+.transaction-row,
+.form-row,
+.account-area {
+  display: flex;
+  align-items: center;
+}
+
+.topbar {
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.account-area {
+  gap: 14px;
+}
+
+.account-copy {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.account-copy strong {
+  font-size: 0.9rem;
+}
+
+.account-copy span {
+  color: #7a828e;
+  font-size: 0.78rem;
 }
 
 .summary-grid {
@@ -124,51 +299,14 @@ h2 {
 }
 
 .panel {
-  border-radius: 18px;
   padding: 24px;
+  border-radius: 18px;
 }
 
 .section-heading {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 22px;
-}
-
-.transaction-form {
-  display: grid;
-  gap: 16px;
-}
-
-.transaction-form label {
-  display: grid;
-  gap: 7px;
-  color: #4e5662;
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-
-.transaction-form input,
-.transaction-form select,
-.filter-select {
-  width: 100%;
-  border: 1px solid #d8dde4;
-  border-radius: 10px;
-  background: #fff;
-  color: #18212f;
-  outline: none;
-}
-
-.transaction-form input,
-.transaction-form select {
-  min-height: 44px;
-  padding: 10px 12px;
-}
-
-.transaction-form input:focus,
-.transaction-form select:focus,
-.filter-select:focus {
-  border-color: #8492a6;
-  box-shadow: 0 0 0 3px rgba(132, 146, 166, 0.14);
 }
 
 .form-row {
@@ -181,13 +319,24 @@ h2 {
   min-width: 0;
 }
 
-.primary-button {
-  min-height: 46px;
-  border: 0;
+.primary-button,
+.secondary-button {
+  min-height: 44px;
   border-radius: 11px;
+  font-weight: 800;
+}
+
+.primary-button {
+  border: 0;
   background: #172033;
   color: #fff;
-  font-weight: 800;
+}
+
+.secondary-button {
+  padding: 0 14px;
+  border: 1px solid #d8dde4;
+  background: #fff;
+  color: #4f5864;
 }
 
 .text-button,
@@ -230,10 +379,10 @@ h2 {
 
 .transaction-icon {
   display: grid;
-  place-items: center;
   flex: 0 0 38px;
   width: 38px;
   height: 38px;
+  place-items: center;
   border-radius: 11px;
   font-weight: 900;
 }
@@ -250,9 +399,9 @@ h2 {
 
 .transaction-main {
   display: grid;
-  gap: 3px;
   flex: 1;
   min-width: 0;
+  gap: 3px;
 }
 
 .transaction-main strong,
@@ -297,9 +446,18 @@ h2 {
 }
 
 @media (max-width: 820px) {
+  .auth-layout,
   .workspace,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .auth-layout {
+    gap: 42px;
+  }
+
+  .auth-intro h1 {
+    font-size: clamp(3rem, 12vw, 5rem);
   }
 
   .transaction-row {
@@ -322,6 +480,14 @@ h2 {
 }
 
 @media (max-width: 520px) {
+  .auth-shell {
+    padding: 30px 14px;
+  }
+
+  .auth-card {
+    padding: 20px;
+  }
+
   .app-shell {
     width: min(100% - 20px, 1180px);
     padding-top: 28px;
@@ -333,8 +499,12 @@ h2 {
     flex-direction: column;
   }
 
-  .status-pill {
-    align-self: flex-start;
+  .account-area {
+    justify-content: space-between;
+  }
+
+  .account-copy {
+    text-align: left;
   }
 
   .panel,

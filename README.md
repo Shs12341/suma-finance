@@ -1,104 +1,117 @@
 # Finance App
 
-Proyecto full-stack de finanzas personales en evolución hacia un portafolio profesional.
+Aplicación full-stack de finanzas personales construida como proyecto de portafolio.
 
-## Checkpoint actual
+## Checkpoint actual: autenticación multiusuario
 
 - React + Vite
 - Node.js + Express
 - PostgreSQL
+- Registro y login reales
+- Contraseñas hasheadas con bcrypt
+- Sesión JWT en cookie HttpOnly
+- Logout y restauración de sesión
+- Datos aislados por usuario
+- Categorías iniciales creadas al registrarse
 - CRUD completo de transacciones
-- Categorías relacionadas por usuario
-- Ingresos y gastos en una sola tabla `transactions`
-- Resumen de balance, ingresos y gastos
-- Edición y eliminación desde la interfaz
-- Usuario demo temporal hasta implementar autenticación
+- Balance, ingresos, gastos y filtros
+- Configuración local fuera del ZIP para no perder credenciales en cada checkpoint
 
 ## Arquitectura
 
 ```text
 React
-  ↓ HTTP / JSON
+  ↓ HTTP / JSON + cookie HttpOnly
 Express API
-  ↓ SQL parametrizado
+  ↓ middleware de autenticación
 PostgreSQL
 ```
 
-## 1. Preparar PostgreSQL
+## Inicio rápido en Windows
 
-Crea la base si todavía no existe:
+### Primera vez con este checkpoint
 
-```sql
-CREATE DATABASE finance_app;
-```
-
-Desde la raíz del proyecto ejecuta:
+Desde la raíz del proyecto:
 
 ```powershell
+.\setup-local.ps1
+```
+
+El script hace tres cosas:
+
+1. Guarda la configuración local en `C:\Users\TU_USUARIO\.finance-app.env`.
+2. Genera un `JWT_SECRET` aleatorio.
+3. Ejecuta `npm install` en backend y frontend.
+
+La contraseña de PostgreSQL se solicita de forma interactiva y ya no queda dentro de la carpeta del proyecto. Los próximos ZIP pueden reemplazar `finance-app` sin borrar esa configuración. Si alguna vez cambias la contraseña local, vuelve a crear la configuración con `.\setup-local.ps1 -ResetConfig`.
+
+Después inicia todo con:
+
+```powershell
+.\start-dev.ps1
+```
+
+Se abrirán dos terminales automáticamente:
+
+```text
+Frontend → http://localhost:5173
+Backend  → http://localhost:3000
+```
+
+## Base de datos
+
+La base usada es `finance_app`. Si partes desde una instalación nueva, crea la base y aplica el esquema:
+
+```powershell
+psql -U postgres -d postgres -c "CREATE DATABASE finance_app;"
 psql -U postgres -d finance_app -f ".\backend\sql\001_initial_schema.sql"
-psql -U postgres -d finance_app -f ".\backend\sql\002_seed_demo.sql"
 ```
 
-La tabla antigua `gastos` puede permanecer en la base por ahora; esta versión ya trabaja con `transactions`.
+Si ya venías del checkpoint anterior, no necesitas recrear nada. El antiguo usuario demo puede permanecer en PostgreSQL; esta versión ya no depende de él.
 
-## 2. Configurar backend
-
-Copia `backend/.env.example` como `backend/.env` y coloca tu contraseña local de PostgreSQL.
-
-```env
-PORT=3000
-DB_USER=postgres
-DB_HOST=localhost
-DB_NAME=finance_app
-DB_PASSWORD=tu_password
-DB_PORT=5432
-DEMO_USER_EMAIL=demo@finance.local
-```
-
-Luego:
-
-```powershell
-cd backend
-npm install
-npm start
-```
-
-Comprueba:
+## Flujo de autenticación
 
 ```text
-http://localhost:3000/api/health
+Register
+  ↓
+bcrypt hash
+  ↓
+users + default categories
+  ↓
+JWT firmado
+  ↓
+HttpOnly cookie
+  ↓
+requireAuth middleware
+  ↓
+req.user.id
+  ↓
+queries filtradas por usuario
 ```
 
-Debe responder con `database: connected`.
+El token no se guarda en `localStorage` ni se expone directamente al código React.
 
-## 3. Ejecutar frontend
-
-En otra terminal:
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Abre:
-
-```text
-http://localhost:5173
-```
-
-## API actual
+## API
 
 ```text
 GET    /api/health
+
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/me
+
 GET    /api/categories
 POST   /api/categories
+
 GET    /api/transactions
 POST   /api/transactions
 PATCH  /api/transactions/:id
 DELETE /api/transactions/:id
 ```
 
+Las rutas de categorías y transacciones requieren una sesión válida.
+
 ## Próxima etapa
 
-Autenticación real, separación por sesión de usuario, presupuestos, metas de ahorro y analytics.
+Dashboard más completo, presupuestos, metas de ahorro y analytics.
