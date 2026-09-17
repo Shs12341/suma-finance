@@ -1,7 +1,10 @@
+require("dotenv").config()
+
 const express = require("express")
 const cors = require("cors")
 
 const app = express()
+const PORT = process.env.PORT || 3000
 
 app.use(cors())
 app.use(express.json())
@@ -36,6 +39,6 @@ app.delete("/api/gastos/:id", (req, res) => {
   res.status(204).send()
 })
 
-app.listen(3000, () => {
-  console.log("Backend funcionando en http://localhost:3000")
+app.listen(PORT, () => {
+  console.log(`Backend funcionando en http://localhost:${PORT}`)
 })

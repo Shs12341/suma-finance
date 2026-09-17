@@ -8,15 +8,15 @@ function App() {
   const [valor, setValor] = useState("")
 
   useEffect(() => {
+    async function cargarGastos() {
+      const respuesta = await fetch("http://localhost:3000/api/gastos")
+      const datos = await respuesta.json()
+
+      setGastos(datos)
+    }
+
     cargarGastos()
   }, [])
-
-  async function cargarGastos() {
-    const respuesta = await fetch("http://localhost:3000/api/gastos")
-    const datos = await respuesta.json()
-
-    setGastos(datos)
-  }
 
   async function agregarGasto() {
     if (!nombre || !valor) {
