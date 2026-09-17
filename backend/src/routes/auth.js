@@ -3,45 +3,13 @@ const bcrypt = require("bcryptjs")
 const pool = require("../db")
 const requireAuth = require("../middleware/auth")
 const defaultCategories = require("../defaultCategories")
-const {
-  COOKIE_NAME,
-  createSessionToken,
-  cookieOptions,
-  clearCookieOptions
-} = require("../auth")
+const { COOKIE_NAME, cookieOptions, clearCookieOptions } = require("../auth")
+const { createCsrfToken, requireCsrf } = require("../security/csrf")
+const { authIpLimiter, loginCredentialLimiter, registerIpLimiter } = require("../security/rateLimit")
+const { validateAuthPayload, parsePositiveInt } = require("../security/validation")
+const { createSession, listSessions, revokeAllSessions, revokeSession } = require("../session")
 
 const router = express.Router()
-
-function normalizeEmail(value) {
-  return String(value || "").trim().toLowerCase()
-}
-
-function validateCredentials({ name, email, password }, requireName) {
-  const cleanName = String(name || "").trim()
-  const cleanEmail = normalizeEmail(email)
-  const cleanPassword = String(password || "")
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-  if (requireName && (cleanName.length < 2 || cleanName.length > 100)) {
-    return { error: "El nombre debe tener entre 2 y 100 caracteres" }
-  }
-
-  if (!emailPattern.test(cleanEmail) || cleanEmail.length > 150) {
-    return { error: "Ingresa un correo válido" }
-  }
-
-  if (cleanPassword.length < 8 || cleanPassword.length > 72) {
-    return { error: "La contraseña debe tener entre 8 y 72 caracteres" }
-  }
-
-  return {
-    value: {
-      name: cleanName,
-      email: cleanEmail,
-      password: cleanPassword
-    }
-  }
-}
 
 function publicUser(user) {
   return {
@@ -52,8 +20,8 @@ function publicUser(user) {
   }
 }
 
-router.post("/register", async (req, res, next) => {
-  const validation = validateCredentials(req.body, true)
+router.post("/register", authIpLimiter, registerIpLimiter, async (req, res, next) => {
+  const validation = validateAuthPayload(req.body, true)
 
   if (validation.error) {
     return res.status(400).json({ error: validation.error })
@@ -87,16 +55,16 @@ router.post("/register", async (req, res, next) => {
       )
     }
 
+    const session = await createSession(user, req, client)
     await client.query("COMMIT")
 
-    const token = createSessionToken(user)
-    res.cookie(COOKIE_NAME, token, cookieOptions())
+    res.cookie(COOKIE_NAME, session.token, cookieOptions())
     res.status(201).json({ user: publicUser(user) })
   } catch (error) {
     await client.query("ROLLBACK")
 
     if (error.code === "23505") {
-      return res.status(409).json({ error: "Ya existe una cuenta con ese correo" })
+      return res.status(409).json({ error: "No se pudo crear la cuenta con esos datos" })
     }
 
     next(error)
@@ -105,8 +73,8 @@ router.post("/register", async (req, res, next) => {
   }
 })
 
-router.post("/login", async (req, res, next) => {
-  const validation = validateCredentials(req.body, false)
+router.post("/login", authIpLimiter, loginCredentialLimiter, async (req, res, next) => {
+  const validation = validateAuthPayload(req.body, false)
 
   if (validation.error) {
     return res.status(400).json({ error: validation.error })
@@ -138,21 +106,76 @@ router.post("/login", async (req, res, next) => {
       return res.status(401).json({ error: "Correo o contraseña incorrectos" })
     }
 
-    const token = createSessionToken(user)
-    res.cookie(COOKIE_NAME, token, cookieOptions())
+    const session = await createSession(user, req)
+    res.cookie(COOKIE_NAME, session.token, cookieOptions())
     res.json({ user: publicUser(user) })
   } catch (error) {
     next(error)
   }
 })
 
-router.post("/logout", (req, res) => {
-  res.clearCookie(COOKIE_NAME, clearCookieOptions())
-  res.status(204).send()
-})
-
 router.get("/me", requireAuth, (req, res) => {
   res.json({ user: publicUser(req.user) })
+})
+
+router.get("/csrf", requireAuth, (req, res) => {
+  res.json({ csrf_token: createCsrfToken(req.auth.tokenId) })
+})
+
+router.get("/sessions", requireAuth, async (req, res, next) => {
+  try {
+    res.json({ sessions: await listSessions(req.user.id, req.auth.tokenId) })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post("/logout", requireAuth, requireCsrf, async (req, res, next) => {
+  try {
+    await revokeSession(req.auth.tokenId, req.user.id)
+    res.clearCookie(COOKIE_NAME, clearCookieOptions())
+    res.status(204).send()
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post("/logout-all", requireAuth, requireCsrf, async (req, res, next) => {
+  try {
+    const revoked = await revokeAllSessions(req.user.id)
+    res.clearCookie(COOKIE_NAME, clearCookieOptions())
+    res.json({ revoked_sessions: revoked })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.delete("/sessions/:id", requireAuth, requireCsrf, async (req, res, next) => {
+  try {
+    const sessionId = parsePositiveInt(req.params.id)
+    if (!sessionId) return res.status(400).json({ error: "ID de sesión inválido" })
+
+    const result = await pool.query(
+      `
+        UPDATE auth_sessions
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL
+        RETURNING token_id
+      `,
+      [sessionId, req.user.id]
+    )
+
+    if (!result.rowCount) return res.status(404).json({ error: "Sesión no encontrada" })
+
+    const revokedCurrentSession = result.rows[0].token_id === req.auth.tokenId
+    if (revokedCurrentSession) {
+      res.clearCookie(COOKIE_NAME, clearCookieOptions())
+    }
+
+    res.json({ revoked: true, current_session: revokedCurrentSession })
+  } catch (error) {
+    next(error)
+  }
 })
 
 module.exports = router

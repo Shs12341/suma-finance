@@ -1,13 +1,12 @@
 const express = require("express")
 const pool = require("../db")
 const requireAuth = require("../middleware/auth")
+const { requireCsrf } = require("../security/csrf")
+const { hasOnlyKeys, parseLimit, parseOffset, parsePositiveInt, validateGoalPayload } = require("../security/validation")
 
 const router = express.Router()
 router.use(requireAuth)
-
-function isDateOnly(value) {
-  return value == null || value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value)
-}
+router.use(requireCsrf)
 
 function normalizeGoal(row) {
   return {
@@ -22,19 +21,22 @@ function normalizeGoal(row) {
 
 router.get("/", async (req, res, next) => {
   try {
+    const limit = parseLimit(req.query.limit, { fallback: 50, max: 100 })
+    const offset = parseOffset(req.query.offset)
+    if (!limit || offset === null) return res.status(400).json({ error: "Paginación inválida" })
+
     const result = await pool.query(
       `
         SELECT id, name, target_amount, saved_amount, target_date, created_at, updated_at
         FROM savings_goals
         WHERE user_id = $1
-        ORDER BY
-          CASE WHEN target_date IS NULL THEN 1 ELSE 0 END,
-          target_date ASC,
-          created_at DESC
+        ORDER BY CASE WHEN target_date IS NULL THEN 1 ELSE 0 END, target_date ASC, created_at DESC
+        LIMIT $2 OFFSET $3
       `,
-      [req.user.id]
+      [req.user.id, limit, offset]
     )
 
+    res.setHeader("X-Page-Limit", String(limit))
     res.json(result.rows.map(normalizeGoal))
   } catch (error) {
     next(error)
@@ -43,24 +45,10 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const name = String(req.body.name || "").trim()
-    const targetAmount = Number(req.body.target_amount)
-    const savedAmount = req.body.saved_amount === undefined ? 0 : Number(req.body.saved_amount)
-    const targetDate = req.body.target_date || null
+    const validation = validateGoalPayload(req.body)
+    if (validation.error) return res.status(400).json({ error: validation.error })
 
-    if (!name || name.length > 120) {
-      return res.status(400).json({ error: "El nombre de la meta es obligatorio (máximo 120 caracteres)" })
-    }
-    if (!Number.isFinite(targetAmount) || targetAmount <= 0) {
-      return res.status(400).json({ error: "El monto objetivo debe ser mayor que cero" })
-    }
-    if (!Number.isFinite(savedAmount) || savedAmount < 0) {
-      return res.status(400).json({ error: "El monto ahorrado no puede ser negativo" })
-    }
-    if (!isDateOnly(targetDate)) {
-      return res.status(400).json({ error: "Fecha objetivo inválida" })
-    }
-
+    const { name, targetAmount, savedAmount, targetDate } = validation.value
     const result = await pool.query(
       `
         INSERT INTO savings_goals (user_id, name, target_amount, saved_amount, target_date)
@@ -78,8 +66,12 @@ router.post("/", async (req, res, next) => {
 
 router.patch("/:id", async (req, res, next) => {
   try {
-    const id = Number(req.params.id)
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: "ID inválido" })
+    const id = parsePositiveInt(req.params.id)
+    if (!id) return res.status(400).json({ error: "ID inválido" })
+
+    if (!hasOnlyKeys(req.body, ["name", "target_amount", "saved_amount", "target_date"])) {
+      return res.status(400).json({ error: "La meta contiene campos no permitidos" })
+    }
 
     const currentResult = await pool.query(
       "SELECT name, target_amount, saved_amount, target_date FROM savings_goals WHERE id = $1 AND user_id = $2",
@@ -88,32 +80,22 @@ router.patch("/:id", async (req, res, next) => {
 
     if (!currentResult.rowCount) return res.status(404).json({ error: "Meta no encontrada" })
 
-    const current = currentResult.rows[0]
-    const name = String(req.body.name ?? current.name).trim()
-    const targetAmount = Number(req.body.target_amount ?? current.target_amount)
-    const savedAmount = Number(req.body.saved_amount ?? current.saved_amount)
-    const currentTargetDate = current.target_date
-      ? (current.target_date instanceof Date
-          ? current.target_date.toISOString().slice(0, 10)
-          : String(current.target_date).slice(0, 10))
-      : null
-    const targetDate = req.body.target_date === undefined
-      ? currentTargetDate
-      : (req.body.target_date || null)
+    const current = normalizeGoal(currentResult.rows[0])
+    const merged = {
+      name: req.body.name ?? current.name,
+      target_amount: req.body.target_amount ?? current.target_amount,
+      saved_amount: req.body.saved_amount ?? current.saved_amount,
+      target_date: req.body.target_date === undefined ? current.target_date : req.body.target_date
+    }
 
-    if (!name || name.length > 120) return res.status(400).json({ error: "Nombre de meta inválido" })
-    if (!Number.isFinite(targetAmount) || targetAmount <= 0) return res.status(400).json({ error: "Monto objetivo inválido" })
-    if (!Number.isFinite(savedAmount) || savedAmount < 0) return res.status(400).json({ error: "Monto ahorrado inválido" })
-    if (!isDateOnly(targetDate)) return res.status(400).json({ error: "Fecha objetivo inválida" })
+    const validation = validateGoalPayload(merged)
+    if (validation.error) return res.status(400).json({ error: validation.error })
 
+    const { name, targetAmount, savedAmount, targetDate } = validation.value
     const result = await pool.query(
       `
         UPDATE savings_goals
-        SET name = $1,
-            target_amount = $2,
-            saved_amount = $3,
-            target_date = $4,
-            updated_at = NOW()
+        SET name = $1, target_amount = $2, saved_amount = $3, target_date = $4, updated_at = NOW()
         WHERE id = $5 AND user_id = $6
         RETURNING id, name, target_amount, saved_amount, target_date, created_at, updated_at
       `,
@@ -128,8 +110,8 @@ router.patch("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const id = Number(req.params.id)
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: "ID inválido" })
+    const id = parsePositiveInt(req.params.id)
+    if (!id) return res.status(400).json({ error: "ID inválido" })
 
     const result = await pool.query(
       "DELETE FROM savings_goals WHERE id = $1 AND user_id = $2",

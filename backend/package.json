@@ -4,7 +4,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test",
+    "security:test": "node --test test/security.test.js"
   },
   "keywords": [],
   "author": "",

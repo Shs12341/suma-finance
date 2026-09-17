@@ -861,7 +861,7 @@ h2 {
 
 .transaction-filters {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 130px 145px;
+  grid-template-columns: minmax(180px, 1fr) 130px 145px auto;
   gap: 9px;
   margin-bottom: 4px;
 }
@@ -937,7 +937,7 @@ h2 {
 
   .app-nav {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     width: 100%;
   }
 
@@ -966,6 +966,92 @@ h2 {
   }
 
   .goal-form .form-row {
+    flex-direction: column;
+  }
+}
+
+.load-more-button {
+  margin: 18px auto 0;
+  display: block;
+}
+
+.security-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.security-summary-panel {
+  position: sticky;
+  top: 24px;
+}
+
+.security-copy {
+  color: #68717d;
+  line-height: 1.65;
+  margin: 12px 0 22px;
+}
+
+.session-list {
+  display: grid;
+  gap: 12px;
+}
+
+.session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.session-row:last-child {
+  border-bottom: 0;
+}
+
+.session-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.session-copy > span,
+.session-copy > small {
+  color: #68717d;
+  overflow-wrap: anywhere;
+}
+
+.session-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-current {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(82, 183, 136, 0.12);
+}
+
+.danger-outline {
+  width: 100%;
+}
+
+@media (max-width: 850px) {
+  .security-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .security-summary-panel {
+    position: static;
+  }
+
+  .session-row {
+    align-items: flex-start;
     flex-direction: column;
   }
 }

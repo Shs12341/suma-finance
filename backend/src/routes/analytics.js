@@ -67,7 +67,7 @@ router.get("/", async (req, res, next) => {
             COALESCE(c.name, 'Uncategorized') AS category_name,
             COALESCE(SUM(t.amount), 0) AS amount
           FROM transactions t
-          LEFT JOIN categories c ON c.id = t.category_id
+          LEFT JOIN categories c ON c.id = t.category_id AND c.user_id = t.user_id
           WHERE t.user_id = $1
             AND t.type = 'expense'
             AND t.transaction_date >= $2::date

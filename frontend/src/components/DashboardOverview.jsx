@@ -49,6 +49,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   }, [month, handleRequestError])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOverview()
   }, [loadOverview, refreshKey])
 

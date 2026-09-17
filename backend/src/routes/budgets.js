@@ -1,9 +1,12 @@
 const express = require("express")
 const pool = require("../db")
 const requireAuth = require("../middleware/auth")
+const { requireCsrf } = require("../security/csrf")
+const { isRealMonth, parsePositiveInt, validateBudgetPayload } = require("../security/validation")
 
 const router = express.Router()
 router.use(requireAuth)
+router.use(requireCsrf)
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7)
@@ -11,12 +14,7 @@ function currentMonth() {
 
 function normalizeMonth(value) {
   const month = value || currentMonth()
-  if (!/^\d{4}-\d{2}$/.test(month)) return null
-
-  const [year, monthNumber] = month.split("-").map(Number)
-  if (year < 2000 || year > 2200 || monthNumber < 1 || monthNumber > 12) return null
-
-  return `${month}-01`
+  return isRealMonth(month) ? `${month}-01` : null
 }
 
 function normalizeBudget(row) {
@@ -48,7 +46,7 @@ async function getBudget(userId, budgetId) {
             AND t.transaction_date < b.month + INTERVAL '1 month'
         ), 0) AS spent
       FROM budgets b
-      JOIN categories c ON c.id = b.category_id
+      JOIN categories c ON c.id = b.category_id AND c.user_id = b.user_id
       LEFT JOIN transactions t
         ON t.user_id = b.user_id
         AND t.category_id = b.category_id
@@ -80,13 +78,14 @@ router.get("/", async (req, res, next) => {
               AND t.transaction_date < b.month + INTERVAL '1 month'
           ), 0) AS spent
         FROM budgets b
-        JOIN categories c ON c.id = b.category_id
+        JOIN categories c ON c.id = b.category_id AND c.user_id = b.user_id
         LEFT JOIN transactions t
           ON t.user_id = b.user_id
           AND t.category_id = b.category_id
         WHERE b.user_id = $1 AND b.month = $2::date
         GROUP BY b.id, c.name
         ORDER BY c.name ASC
+        LIMIT 200
       `,
       [req.user.id, monthDate]
     )
@@ -99,24 +98,13 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const userId = req.user.id
-    const categoryId = Number(req.body.category_id)
-    const amount = Number(req.body.amount)
-    const monthDate = normalizeMonth(req.body.month)
+    const validation = validateBudgetPayload(req.body)
+    if (validation.error) return res.status(400).json({ error: validation.error })
 
-    if (!Number.isInteger(categoryId) || categoryId <= 0) {
-      return res.status(400).json({ error: "Selecciona una categoría válida" })
-    }
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ error: "El presupuesto debe ser mayor que cero" })
-    }
-    if (!monthDate) {
-      return res.status(400).json({ error: "Mes inválido. Usa YYYY-MM" })
-    }
-
+    const { categoryId, amount, monthDate } = validation.value
     const category = await pool.query(
       "SELECT id FROM categories WHERE id = $1 AND user_id = $2 AND type = 'expense'",
-      [categoryId, userId]
+      [categoryId, req.user.id]
     )
 
     if (!category.rowCount) {
@@ -131,11 +119,12 @@ router.post("/", async (req, res, next) => {
         DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
         RETURNING id
       `,
-      [userId, categoryId, monthDate, amount]
+      [req.user.id, categoryId, monthDate, amount]
     )
 
-    const budget = await getBudget(userId, result.rows[0].id)
-    res.status(201).json(budget)
+    const budget = await getBudget(req.user.id, result.rows[0].id)
+    // This endpoint behaves as an idempotent save/upsert operation.
+    res.status(200).json(budget)
   } catch (error) {
     next(error)
   }
@@ -143,10 +132,8 @@ router.post("/", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const id = Number(req.params.id)
-    if (!Number.isInteger(id) || id <= 0) {
-      return res.status(400).json({ error: "ID inválido" })
-    }
+    const id = parsePositiveInt(req.params.id)
+    if (!id) return res.status(400).json({ error: "ID inválido" })
 
     const result = await pool.query(
       "DELETE FROM budgets WHERE id = $1 AND user_id = $2",

@@ -39,7 +39,12 @@ function App() {
 
   function sessionExpired() {
     setUser(null)
-    setAuthError("Tu sesión expiró. Inicia sesión nuevamente.")
+    setAuthError("Tu sesión expiró o fue revocada. Inicia sesión nuevamente.")
+  }
+
+  function allSessionsRevoked(message) {
+    setUser(null)
+    setAuthError(message || "Todas las sesiones fueron cerradas.")
   }
 
   if (checkingSession) {
@@ -68,6 +73,7 @@ function App() {
       user={user}
       onLogout={logout}
       onSessionExpired={sessionExpired}
+      onAllSessionsRevoked={allSessionsRevoked}
     />
   )
 }

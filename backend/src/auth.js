@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken")
 
 const COOKIE_NAME = process.env.COOKIE_NAME || "finance_session"
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET
@@ -13,11 +13,14 @@ function getJwtSecret() {
   return secret
 }
 
-function createSessionToken(user) {
+function createSessionToken(user, tokenId) {
+  if (!tokenId) throw new Error("tokenId es obligatorio para crear una sesión")
+
   return jwt.sign(
     {
       sub: String(user.id),
-      email: user.email
+      email: user.email,
+      jti: tokenId
     },
     getJwtSecret(),
     { expiresIn: "7d" }
@@ -33,7 +36,7 @@ function cookieOptions() {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: ONE_WEEK_MS,
+    maxAge: SESSION_TTL_MS,
     path: "/"
   }
 }
@@ -49,6 +52,7 @@ function clearCookieOptions() {
 
 module.exports = {
   COOKIE_NAME,
+  SESSION_TTL_MS,
   createSessionToken,
   verifySessionToken,
   cookieOptions,
