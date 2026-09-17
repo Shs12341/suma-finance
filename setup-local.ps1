@@ -65,7 +65,7 @@ Pop-Location
 
 Write-Host "Checking PostgreSQL and applying the schema..." -ForegroundColor Cyan
 Push-Location (Join-Path $Root "backend")
-node -e "require('./src/loadEnv'); const fs=require('fs'); const pool=require('./src/db'); const sql=fs.readFileSync('./sql/001_initial_schema.sql','utf8'); pool.query(sql).then(()=>{console.log('Database connected and schema ready.'); return pool.end()}).catch(error=>{console.error(error.message); process.exit(1)})"
+node -e "require('./src/loadEnv'); const fs=require('fs'); const path=require('path'); const pool=require('./src/db'); (async()=>{ const files=fs.readdirSync('./sql').filter(f=>f.endsWith('.sql')).sort(); for (const file of files){ const sql=fs.readFileSync(path.join('./sql',file),'utf8'); await pool.query(sql); console.log('Applied '+file); } console.log('Database connected and schema ready.'); await pool.end(); })().catch(error=>{console.error(error.message); process.exit(1)})"
 $DatabaseExitCode = $LASTEXITCODE
 Pop-Location
 

@@ -2,94 +2,72 @@
 
 Aplicación full-stack de finanzas personales construida como proyecto de portafolio.
 
-## Checkpoint actual: autenticación multiusuario
+## Checkpoint actual: Financial Core
+
+Este checkpoint conserva la autenticación multiusuario y agrega la capa principal de producto financiero:
 
 - React + Vite
 - Node.js + Express
 - PostgreSQL
-- Registro y login reales
-- Contraseñas hasheadas con bcrypt
-- Sesión JWT en cookie HttpOnly
-- Logout y restauración de sesión
+- Registro/login con bcrypt + JWT en cookie HttpOnly
 - Datos aislados por usuario
-- Categorías iniciales creadas al registrarse
 - CRUD completo de transacciones
-- Balance, ingresos, gastos y filtros
-- Configuración local fuera del ZIP para no perder credenciales en cada checkpoint
+- Búsqueda y filtros por tipo/mes
+- CRUD de categorías
+- Dashboard mensual
+- Presupuestos por categoría y mes
+- Metas de ahorro con progreso y aportes
+- Analytics de 6 meses
+- Gastos por categoría
+- Savings rate
+- Configuración local persistente fuera del ZIP
 
-## Arquitectura
+## Actualizar desde el checkpoint anterior
+
+Tu archivo local sigue fuera del proyecto:
 
 ```text
-React
-  ↓ HTTP / JSON + cookie HttpOnly
-Express API
-  ↓ middleware de autenticación
-PostgreSQL
+C:\Users\TU_USUARIO\.finance-app.env
 ```
 
-## Inicio rápido en Windows
-
-### Primera vez con este checkpoint
-
-Desde la raíz del proyecto:
+Después de reemplazar la carpeta por este ZIP, ejecuta una vez:
 
 ```powershell
 .\setup-local.ps1
 ```
 
-El script hace tres cosas:
+Como el archivo `.finance-app.env` ya existe, **no vuelve a pedir la contraseña**. El script preserva tu configuración, instala dependencias y aplica todos los archivos SQL de `backend/sql` en orden.
 
-1. Guarda la configuración local en `C:\Users\TU_USUARIO\.finance-app.env`.
-2. Genera un `JWT_SECRET` aleatorio.
-3. Ejecuta `npm install` en backend y frontend.
-
-La contraseña de PostgreSQL se solicita de forma interactiva y ya no queda dentro de la carpeta del proyecto. Los próximos ZIP pueden reemplazar `finance-app` sin borrar esa configuración. Si alguna vez cambias la contraseña local, vuelve a crear la configuración con `.\setup-local.ps1 -ResetConfig`.
-
-Después inicia todo con:
+Después inicia el proyecto con:
 
 ```powershell
 .\start-dev.ps1
 ```
 
-Se abrirán dos terminales automáticamente:
+Frontend: `http://localhost:5173`
 
-```text
-Frontend → http://localhost:5173
-Backend  → http://localhost:3000
-```
+Backend: `http://localhost:3000`
 
 ## Base de datos
 
-La base usada es `finance_app`. Si partes desde una instalación nueva, crea la base y aplica el esquema:
-
-```powershell
-psql -U postgres -d postgres -c "CREATE DATABASE finance_app;"
-psql -U postgres -d finance_app -f ".\backend\sql\001_initial_schema.sql"
-```
-
-Si ya venías del checkpoint anterior, no necesitas recrear nada. El antiguo usuario demo puede permanecer en PostgreSQL; esta versión ya no depende de él.
-
-## Flujo de autenticación
+### Tablas principales
 
 ```text
-Register
-  ↓
-bcrypt hash
-  ↓
-users + default categories
-  ↓
-JWT firmado
-  ↓
-HttpOnly cookie
-  ↓
-requireAuth middleware
-  ↓
-req.user.id
-  ↓
-queries filtradas por usuario
+users
+categories
+transactions
+budgets
+savings_goals
 ```
 
-El token no se guarda en `localStorage` ni se expone directamente al código React.
+Las migraciones actuales son:
+
+```text
+backend/sql/001_initial_schema.sql
+backend/sql/002_financial_core.sql
+```
+
+`setup-local.ps1` ejecuta todos los `.sql` por orden de nombre y son idempotentes.
 
 ## API
 
@@ -103,15 +81,50 @@ GET    /api/auth/me
 
 GET    /api/categories
 POST   /api/categories
+PATCH  /api/categories/:id
+DELETE /api/categories/:id
 
 GET    /api/transactions
 POST   /api/transactions
 PATCH  /api/transactions/:id
 DELETE /api/transactions/:id
+
+GET    /api/budgets?month=YYYY-MM
+POST   /api/budgets
+DELETE /api/budgets/:id
+
+GET    /api/goals
+POST   /api/goals
+PATCH  /api/goals/:id
+DELETE /api/goals/:id
+
+GET    /api/analytics?month=YYYY-MM&months=6
 ```
 
-Las rutas de categorías y transacciones requieren una sesión válida.
+Todas las rutas financieras requieren sesión válida y filtran por `req.user.id`.
 
-## Próxima etapa
+## Flujo del dashboard
 
-Dashboard más completo, presupuestos, metas de ahorro y analytics.
+```text
+Overview
+├── resumen mensual
+├── income vs expenses (6 meses)
+├── gasto por categoría
+├── budgets
+└── savings goals
+
+Transactions
+├── create/edit/delete
+├── search
+├── type filter
+└── month filter
+
+Categories
+├── create
+├── rename/edit type cuando es seguro
+└── delete
+```
+
+## Siguiente etapa sugerida
+
+Recuperación/cambio de contraseña, perfil, estados de carga más pulidos, toasts, pruebas automatizadas y preparación para deploy.

@@ -7,6 +7,9 @@ const pool = require("./src/db")
 const authRouter = require("./src/routes/auth")
 const transactionsRouter = require("./src/routes/transactions")
 const categoriesRouter = require("./src/routes/categories")
+const budgetsRouter = require("./src/routes/budgets")
+const goalsRouter = require("./src/routes/goals")
+const analyticsRouter = require("./src/routes/analytics")
 
 const app = express()
 const PORT = Number(process.env.PORT || 3000)
@@ -36,6 +39,9 @@ app.get("/api/health", async (req, res) => {
 app.use("/api/auth", authRouter)
 app.use("/api/transactions", transactionsRouter)
 app.use("/api/categories", categoriesRouter)
+app.use("/api/budgets", budgetsRouter)
+app.use("/api/goals", goalsRouter)
+app.use("/api/analytics", analyticsRouter)
 
 app.use((req, res) => {
   res.status(404).json({ error: "Ruta no encontrada" })
