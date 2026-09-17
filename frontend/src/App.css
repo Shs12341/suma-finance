@@ -1,0 +1,363 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #18212f;
+  background: #f4f6f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f4f6f8;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+select {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.topbar,
+.section-heading,
+.transaction-row,
+.form-row {
+  display: flex;
+  align-items: center;
+}
+
+.topbar {
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.eyebrow {
+  margin-bottom: 7px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.status-pill {
+  padding: 8px 12px;
+  border: 1px solid #d9dee5;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f6773;
+  font-size: 0.82rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-card,
+.panel {
+  border: 1px solid #e0e4e9;
+  background: #fff;
+}
+
+.summary-card {
+  padding: 22px;
+  border-radius: 16px;
+}
+
+.summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #717985;
+  font-size: 0.9rem;
+}
+
+.summary-card strong {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.65fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.panel {
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.section-heading {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.transaction-form {
+  display: grid;
+  gap: 16px;
+}
+
+.transaction-form label {
+  display: grid;
+  gap: 7px;
+  color: #4e5662;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.transaction-form input,
+.transaction-form select,
+.filter-select {
+  width: 100%;
+  border: 1px solid #d8dde4;
+  border-radius: 10px;
+  background: #fff;
+  color: #18212f;
+  outline: none;
+}
+
+.transaction-form input,
+.transaction-form select {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.transaction-form input:focus,
+.transaction-form select:focus,
+.filter-select:focus {
+  border-color: #8492a6;
+  box-shadow: 0 0 0 3px rgba(132, 146, 166, 0.14);
+}
+
+.form-row {
+  align-items: start;
+  gap: 12px;
+}
+
+.form-row > label {
+  flex: 1;
+  min-width: 0;
+}
+
+.primary-button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 11px;
+  background: #172033;
+  color: #fff;
+  font-weight: 800;
+}
+
+.text-button,
+.row-actions button {
+  border: 0;
+  background: transparent;
+  color: #5d6673;
+  font-weight: 700;
+}
+
+.error-message {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff1f1;
+  color: #a73c3c;
+  font-size: 0.88rem;
+}
+
+.transactions-heading {
+  margin-bottom: 12px;
+}
+
+.filter-select {
+  width: auto;
+  min-width: 120px;
+  min-height: 38px;
+  padding: 7px 10px;
+}
+
+.transaction-list {
+  display: grid;
+}
+
+.transaction-row {
+  gap: 14px;
+  padding: 15px 0;
+  border-top: 1px solid #eceff2;
+}
+
+.transaction-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  font-weight: 900;
+}
+
+.transaction-icon.income {
+  background: #eaf7ef;
+  color: #207b46;
+}
+
+.transaction-icon.expense {
+  background: #fff0ef;
+  color: #ac433c;
+}
+
+.transaction-main {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.transaction-main strong,
+.transaction-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-main span {
+  color: #7a828e;
+  font-size: 0.82rem;
+}
+
+.transaction-amount {
+  min-width: 105px;
+  text-align: right;
+}
+
+.transaction-amount.income {
+  color: #207b46;
+}
+
+.transaction-amount.expense {
+  color: #ac433c;
+}
+
+.row-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.row-actions button {
+  padding: 7px 8px;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 34px 0;
+  color: #7a828e;
+  text-align: center;
+}
+
+@media (max-width: 820px) {
+  .workspace,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .transaction-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .transaction-main {
+    flex: 1 1 calc(100% - 52px);
+  }
+
+  .transaction-amount {
+    margin-left: 52px;
+    text-align: left;
+  }
+
+  .row-actions {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    width: min(100% - 20px, 1180px);
+    padding-top: 28px;
+  }
+
+  .topbar,
+  .form-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .status-pill {
+    align-self: flex-start;
+  }
+
+  .panel,
+  .summary-card {
+    padding: 18px;
+  }
+
+  .transactions-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+
+  .transaction-amount,
+  .row-actions {
+    margin-left: 52px;
+  }
+
+  .row-actions {
+    width: calc(100% - 52px);
+    justify-content: flex-end;
+  }
+}

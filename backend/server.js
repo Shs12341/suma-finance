@@ -2,41 +2,31 @@ require("dotenv").config()
 
 const express = require("express")
 const cors = require("cors")
+const pool = require("./src/db")
+const transactionsRouter = require("./src/routes/transactions")
+const categoriesRouter = require("./src/routes/categories")
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = Number(process.env.PORT || 3000)
 
 app.use(cors())
 app.use(express.json())
 
-let gastos = [
-  { id: 1, nombre: "Comida", valor: 30 },
-  { id: 2, nombre: "Gasolina", valor: 20 },
-  { id: 3, nombre: "Internet", valor: 40 }
-]
-
-app.get("/api/gastos", (req, res) => {
-  res.json(gastos)
-})
-
-app.post("/api/gastos", (req, res) => {
-  const nuevoGasto = {
-    id: Date.now(),
-    nombre: req.body.nombre,
-    valor: Number(req.body.valor)
+app.get("/api/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1")
+    res.json({ status: "ok", database: "connected" })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: "error", database: "disconnected" })
   }
-
-  gastos.push(nuevoGasto)
-
-  res.status(201).json(nuevoGasto)
 })
 
-app.delete("/api/gastos/:id", (req, res) => {
-  const id = Number(req.params.id)
+app.use("/api/transactions", transactionsRouter)
+app.use("/api/categories", categoriesRouter)
 
-  gastos = gastos.filter(gasto => gasto.id !== id)
-
-  res.status(204).send()
+app.use((req, res) => {
+  res.status(404).json({ error: "Ruta no encontrada" })
 })
 
 app.listen(PORT, () => {
