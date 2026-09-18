@@ -12,6 +12,7 @@ const categoriesRouter = require("./src/routes/categories")
 const budgetsRouter = require("./src/routes/budgets")
 const goalsRouter = require("./src/routes/goals")
 const analyticsRouter = require("./src/routes/analytics")
+const { requestIdMiddleware, responseAuditMiddleware, safeError } = require("./src/security/logger")
 
 const app = express()
 const PORT = Number(process.env.PORT || 3000)
@@ -22,6 +23,8 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 }
 
 app.disable("x-powered-by")
+app.use(requestIdMiddleware)
+app.use(responseAuditMiddleware)
 app.use(securityHeaders)
 app.use(cors({
   origin(origin, callback) {
@@ -42,7 +45,7 @@ app.get("/api/health", async (req, res) => {
     await pool.query("SELECT 1")
     res.json({ status: "ok", database: "connected" })
   } catch (error) {
-    console.error(error)
+    safeError(error, req, { status: 500, category: "database_health" })
     res.status(500).json({ status: "error", database: "disconnected" })
   }
 })
@@ -59,32 +62,41 @@ app.use((req, res) => {
 })
 
 app.use((error, req, res, next) => {
-  console.error(error)
-
   if (res.headersSent) return next(error)
 
+  let status = 500
+  let message = "Error interno del servidor"
+  let category = "internal_error"
+
   if (error.type === "entity.parse.failed") {
-    return res.status(400).json({ error: "JSON inválido" })
+    status = 400
+    message = "JSON inválido"
+    category = "invalid_json"
+  } else if (error.type === "entity.too.large") {
+    status = 413
+    message = "La solicitud supera el tamaño permitido"
+    category = "body_too_large"
+  } else if (["22001", "22003", "22007", "22008", "22P02", "23514"].includes(error.code)) {
+    status = 400
+    message = "Los datos enviados no cumplen las restricciones permitidas"
+    category = "database_constraint"
+  } else if (error.code === "23505") {
+    status = 409
+    message = "El registro ya existe"
+    category = "database_conflict"
+  } else {
+    const requestedStatus = Number(error.statusCode || error.status)
+    if (Number.isInteger(requestedStatus) && requestedStatus >= 400 && requestedStatus < 500) {
+      status = requestedStatus
+      message = "Solicitud inválida"
+      category = "client_error"
+    }
   }
 
-  if (error.type === "entity.too.large") {
-    return res.status(413).json({ error: "La solicitud supera el tamaño permitido" })
-  }
-
-  if (["22001", "22003", "22007", "22008", "22P02", "23514"].includes(error.code)) {
-    return res.status(400).json({ error: "Los datos enviados no cumplen las restricciones permitidas" })
-  }
-
-  if (error.code === "23505") {
-    return res.status(409).json({ error: "El registro ya existe" })
-  }
-
-  const status = Number(error.statusCode || error.status)
-  if (Number.isInteger(status) && status >= 400 && status < 500) {
-    return res.status(status).json({ error: "Solicitud inválida" })
-  }
-
-  res.status(500).json({ error: "Error interno del servidor" })
+  // Never log the raw Error object here. Body-parser errors can carry the raw
+  // request body, which may contain credentials or other sensitive values.
+  safeError(error, req, { status, category })
+  res.status(status).json({ error: message, request_id: req.requestId })
 })
 
 const server = app.listen(PORT, () => {
@@ -99,7 +111,7 @@ const cleanupTimer = setInterval(() => {
       WHERE expires_at < NOW() - INTERVAL '30 days'
          OR revoked_at < NOW() - INTERVAL '30 days'
     `
-  ).catch(error => console.error("No se pudo limpiar sesiones antiguas", error.message))
+  ).catch(error => safeError(error, null, { status: 500, category: "session_cleanup" }))
 }, 6 * 60 * 60 * 1000)
 cleanupTimer.unref()
 

@@ -8,6 +8,9 @@ const { createCsrfToken, requireCsrf } = require("../security/csrf")
 const { authIpLimiter, loginCredentialLimiter, registerIpLimiter } = require("../security/rateLimit")
 const { validateAuthPayload, parsePositiveInt } = require("../security/validation")
 const { createSession, listSessions, revokeAllSessions, revokeSession } = require("../session")
+const { securityEvent, securityWarning } = require("../security/logger")
+
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("finance-app-dummy-password", 12)
 
 const router = express.Router()
 
@@ -59,11 +62,13 @@ router.post("/register", authIpLimiter, registerIpLimiter, async (req, res, next
     await client.query("COMMIT")
 
     res.cookie(COOKIE_NAME, session.token, cookieOptions())
+    securityEvent("auth_register_success", req, { status: 201, outcome: "success" })
     res.status(201).json({ user: publicUser(user) })
   } catch (error) {
     await client.query("ROLLBACK")
 
     if (error.code === "23505") {
+      securityWarning("auth_register_conflict", req, { status: 409, outcome: "denied" })
       return res.status(409).json({ error: "No se pudo crear la cuenta con esos datos" })
     }
 
@@ -92,22 +97,20 @@ router.post("/login", authIpLimiter, loginCredentialLimiter, async (req, res, ne
       [email]
     )
 
-    if (result.rowCount === 0) {
-      return res.status(401).json({ error: "Correo o contraseña incorrectos" })
-    }
+    const user = result.rows[0] || null
+    const candidateHash = user && /^\$2[aby]\$/.test(user.password_hash)
+      ? user.password_hash
+      : DUMMY_PASSWORD_HASH
+    const passwordMatches = await bcrypt.compare(password, candidateHash)
 
-    const user = result.rows[0]
-    const hasBcryptHash = /^\$2[aby]\$/.test(user.password_hash)
-    const passwordMatches = hasBcryptHash
-      ? await bcrypt.compare(password, user.password_hash)
-      : false
-
-    if (!passwordMatches) {
+    if (!user || !passwordMatches) {
+      securityWarning("auth_login_failed", req, { status: 401, outcome: "denied" })
       return res.status(401).json({ error: "Correo o contraseña incorrectos" })
     }
 
     const session = await createSession(user, req)
     res.cookie(COOKIE_NAME, session.token, cookieOptions())
+    securityEvent("auth_login_success", req, { status: 200, outcome: "success" })
     res.json({ user: publicUser(user) })
   } catch (error) {
     next(error)
@@ -133,6 +136,7 @@ router.get("/sessions", requireAuth, async (req, res, next) => {
 router.post("/logout", requireAuth, requireCsrf, async (req, res, next) => {
   try {
     await revokeSession(req.auth.tokenId, req.user.id)
+    securityEvent("auth_logout", req, { status: 204, outcome: "success", session_id: req.auth.sessionId })
     res.clearCookie(COOKIE_NAME, clearCookieOptions())
     res.status(204).send()
   } catch (error) {
@@ -143,6 +147,7 @@ router.post("/logout", requireAuth, requireCsrf, async (req, res, next) => {
 router.post("/logout-all", requireAuth, requireCsrf, async (req, res, next) => {
   try {
     const revoked = await revokeAllSessions(req.user.id)
+    securityEvent("auth_logout_all", req, { status: 200, outcome: "success", revoked_count: revoked })
     res.clearCookie(COOKIE_NAME, clearCookieOptions())
     res.json({ revoked_sessions: revoked })
   } catch (error) {
@@ -168,6 +173,12 @@ router.delete("/sessions/:id", requireAuth, requireCsrf, async (req, res, next) 
     if (!result.rowCount) return res.status(404).json({ error: "Sesión no encontrada" })
 
     const revokedCurrentSession = result.rows[0].token_id === req.auth.tokenId
+    securityEvent("auth_session_revoked", req, {
+      status: 200,
+      outcome: "success",
+      resource: "session",
+      resource_id: sessionId
+    })
     if (revokedCurrentSession) {
       res.clearCookie(COOKIE_NAME, clearCookieOptions())
     }

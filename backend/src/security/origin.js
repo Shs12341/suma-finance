@@ -1,3 +1,5 @@
+const { securityWarning } = require("./logger")
+
 function normalizedOrigin(value) {
   try {
     return new URL(value).origin
@@ -17,6 +19,7 @@ function requireTrustedOrigin(req, res, next) {
   if (!requestOrigin) return next()
 
   if (!configuredOrigin || normalizedOrigin(requestOrigin) !== configuredOrigin) {
+    securityWarning("origin_validation_failed", req, { status: 403, outcome: "denied" })
     return res.status(403).json({ error: "Origen no permitido" })
   }
 

@@ -1,4 +1,5 @@
 const crypto = require("crypto")
+const { securityWarning } = require("./logger")
 
 function csrfSecret() {
   const secret = process.env.JWT_SECRET
@@ -26,6 +27,7 @@ function requireCsrf(req, res, next) {
   const provided = req.get("x-csrf-token")
 
   if (!tokenId || !provided || !safeEqual(provided, createCsrfToken(tokenId))) {
+    securityWarning("csrf_validation_failed", req, { status: 403, outcome: "denied" })
     return res.status(403).json({ error: "Validación CSRF fallida" })
   }
 

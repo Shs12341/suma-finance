@@ -121,14 +121,18 @@ router.delete("/:id", async (req, res, next) => {
     const id = parsePositiveInt(req.params.id)
     if (!id) return res.status(400).json({ error: "ID inválido" })
 
-    const budgets = await pool.query(
-      "SELECT 1 FROM budgets WHERE category_id = $1 AND user_id = $2 LIMIT 1",
+    const usage = await pool.query(
+      `
+        SELECT
+          EXISTS(SELECT 1 FROM transactions WHERE category_id = $1 AND user_id = $2) AS has_transactions,
+          EXISTS(SELECT 1 FROM budgets WHERE category_id = $1 AND user_id = $2) AS has_budgets
+      `,
       [id, req.user.id]
     )
 
-    if (budgets.rowCount) {
+    if (usage.rows[0].has_transactions || usage.rows[0].has_budgets) {
       return res.status(409).json({
-        error: "Esta categoría tiene presupuestos. Elimínalos primero para evitar pérdida accidental de datos."
+        error: "Esta categoría está en uso. Reasigna o elimina primero sus transacciones y presupuestos."
       })
     }
 
@@ -140,6 +144,11 @@ router.delete("/:id", async (req, res, next) => {
     if (!result.rowCount) return res.status(404).json({ error: "Categoría no encontrada" })
     res.status(204).send()
   } catch (error) {
+    if (error.code === "23503") {
+      return res.status(409).json({
+        error: "La categoría empezó a usarse mientras intentabas eliminarla. Actualiza los datos e inténtalo de nuevo."
+      })
+    }
     next(error)
   }
 })

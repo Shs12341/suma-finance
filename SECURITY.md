@@ -19,6 +19,9 @@ Finance App is a portfolio application, but the security controls are implemente
 - Transaction history is cursor-paginated and list endpoints have maximum page sizes.
 - API and Vite development responses include defense-in-depth browser headers.
 - Express framework disclosure is disabled.
+- Error and security logging is structured and allowlisted; raw request bodies and auth material are never logged.
+- Failed login performs bcrypt work even for nonexistent accounts to reduce timing enumeration.
+- Category deletion is database-restricted while transactions or budgets reference the category.
 
 ## Session model
 
@@ -35,6 +38,14 @@ The API also validates browser `Origin` values and keeps SameSite cookies and st
 ## Rate limiting
 
 The local/single-process implementation uses bounded in-memory counters for login and registration. A production multi-instance deployment should move limiter state to a shared store such as Redis or a managed rate-limiting layer.
+
+## Security audit trail
+
+The project preserves the audit trail under `docs/security/`:
+
+- `SECURITY_AUDIT_BASELINE.md` — pre-hardening baseline.
+- `SECURITY_AUDIT_V2.md` — adversarial retest after the first hardening checkpoint.
+- `SECURITY_GATE_FINAL.md` — remediation applied after V2.
 
 ## Baseline audit
 

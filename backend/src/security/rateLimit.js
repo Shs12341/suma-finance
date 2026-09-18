@@ -1,3 +1,5 @@
+const { securityWarning } = require("./logger")
+
 const buckets = new Map()
 
 function nowMs() {
@@ -30,6 +32,12 @@ function createRateLimiter({ windowMs, max, keyGenerator, message }) {
 
     if (entry.count > max) {
       res.setHeader("Retry-After", String(retryAfterSeconds))
+      securityWarning("auth_rate_limit_blocked", req, {
+        status: 429,
+        outcome: "denied",
+        limit: max,
+        window_seconds: Math.ceil(windowMs / 1000)
+      })
       return res.status(429).json({ error: message || "Demasiados intentos. Intenta nuevamente más tarde." })
     }
 

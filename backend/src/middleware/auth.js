@@ -1,7 +1,9 @@
 const pool = require("../db")
 const { COOKIE_NAME, verifySessionToken, clearCookieOptions } = require("../auth")
+const { securityWarning, safeError } = require("../security/logger")
 
-function rejectSession(res, message) {
+function rejectSession(req, res, message, reason = "invalid_session") {
+  securityWarning("auth_session_rejected", req, { status: 401, outcome: "denied", reason })
   res.clearCookie(COOKIE_NAME, clearCookieOptions())
   return res.status(401).json({ error: message })
 }
@@ -11,6 +13,7 @@ async function requireAuth(req, res, next) {
     const token = req.cookies?.[COOKIE_NAME]
 
     if (!token) {
+      securityWarning("auth_session_rejected", req, { status: 401, outcome: "denied", reason: "missing_cookie" })
       return res.status(401).json({ error: "Debes iniciar sesión" })
     }
 
@@ -19,7 +22,7 @@ async function requireAuth(req, res, next) {
     const tokenId = payload.jti
 
     if (!Number.isInteger(userId) || userId <= 0 || typeof tokenId !== "string" || !tokenId) {
-      return rejectSession(res, "Sesión inválida")
+      return rejectSession(req, res, "Sesión inválida", "invalid_claims")
     }
 
     const result = await pool.query(
@@ -43,7 +46,7 @@ async function requireAuth(req, res, next) {
     )
 
     if (result.rowCount === 0) {
-      return rejectSession(res, "Sesión expirada, cerrada o inválida")
+      return rejectSession(req, res, "Sesión expirada, cerrada o inválida", "revoked_or_expired")
     }
 
     const row = result.rows[0]
@@ -68,12 +71,12 @@ async function requireAuth(req, res, next) {
           AND last_seen_at < NOW() - INTERVAL '5 minutes'
       `,
       [tokenId]
-    ).catch(error => console.error("No se pudo actualizar last_seen_at", error.message))
+    ).catch(error => safeError(error, req, { status: 500, category: "session_last_seen" }))
 
     next()
   } catch (error) {
     if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
-      return rejectSession(res, "La sesión expiró o no es válida")
+      return rejectSession(req, res, "La sesión expiró o no es válida", "jwt_invalid_or_expired")
     }
 
     next(error)

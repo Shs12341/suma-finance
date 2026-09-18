@@ -2,9 +2,9 @@
 
 Aplicación full-stack de finanzas personales construida como proyecto de portafolio.
 
-## Checkpoint actual: Security Hardening
+## Checkpoint actual: Security Gate Final
 
-La base financiera anterior sigue intacta y este checkpoint endurece la aplicación alrededor de los hallazgos de una auditoría real del estado anterior.
+La base financiera anterior sigue intacta. Este checkpoint cierra el hallazgo MEDIUM de la auditoría V2 y refuerza logging, resistencia a timing enumeration y consistencia concurrente de categorías.
 
 ### Stack y producto
 
@@ -33,6 +33,9 @@ La base financiera anterior sigue intacta y este checkpoint endurece la aplicaci
 - `X-Powered-By` deshabilitado
 - manejo uniforme de errores de entrada
 - pruebas unitarias de controles de seguridad
+- logging estructurado y redactado con request IDs
+- comparación bcrypt de trabajo constante para usuarios inexistentes
+- protección de integridad ante delete/create concurrente de categorías
 
 Más detalles: `SECURITY.md` y `docs/security/HARDENING_CHECKPOINT.md`.
 
@@ -55,6 +58,7 @@ El script conserva `.finance-app.env`, instala dependencias y aplica todas las m
 
 ```text
 backend/sql/003_security_hardening.sql
+backend/sql/004_security_gate_final.sql
 ```
 
 Luego inicia:
@@ -88,6 +92,7 @@ Migraciones:
 backend/sql/001_initial_schema.sql
 backend/sql/002_financial_core.sql
 backend/sql/003_security_hardening.sql
+backend/sql/004_security_gate_final.sql
 ```
 
 `setup-local.ps1` aplica todos los `.sql` en orden y las migraciones son idempotentes.
@@ -149,4 +154,4 @@ El informe pre-hardening está preservado en:
 docs/security/SECURITY_AUDIT_BASELINE.md
 ```
 
-La idea es repetir exactamente la misma auditoría contra este checkpoint y comparar evidencia antes/después.
+La auditoría V2 también está preservada en `docs/security/SECURITY_AUDIT_V2.md`. El siguiente paso es un retest final corto para cerrar Security v1 antes del despliegue y la preparación de CV/GitHub.
