@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { ApiError, apiFetch } from "../services/api"
+import ConfirmDialog from "./ConfirmDialog"
 import Icon from "./Icon"
 
 const today = new Date().toISOString().slice(0, 10)
@@ -25,6 +26,8 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleRequestError = useCallback((requestError) => {
     if (requestError instanceof ApiError && requestError.status === 401) {
@@ -64,11 +67,11 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
 
   function updateField(event) {
     const { name, value } = event.target
-    if (name === "type") {
-      setForm(current => ({ ...current, type: value, category_id: "" }))
-      return
-    }
     setForm(current => ({ ...current, [name]: value }))
+  }
+
+  function setType(type) {
+    setForm(current => ({ ...current, type, category_id: "" }))
   }
 
   function resetForm() {
@@ -85,13 +88,13 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
       category_id: transaction.category_id ? String(transaction.category_id) : "",
       transaction_date: transaction.transaction_date.slice(0, 10)
     })
-    window.scrollTo({ top: 120, behavior: "smooth" })
+    window.scrollTo({ top: 90, behavior: "smooth" })
   }
 
   async function submitTransaction(event) {
     event.preventDefault()
     if (!form.description.trim() || !form.amount || !form.category_id) {
-      setError("Completa descripción, monto y categoría")
+      setError("Add a description, amount and category before saving.")
       return
     }
 
@@ -120,91 +123,131 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
     }
   }
 
-  async function deleteTransaction(id) {
+  async function confirmDelete() {
+    if (!deleteTarget) return
     try {
+      setDeleting(true)
       setError("")
-      await apiFetch(`/transactions/${id}`, { method: "DELETE" })
-      if (editingId === id) resetForm()
+      await apiFetch(`/transactions/${deleteTarget.id}`, { method: "DELETE" })
+      if (editingId === deleteTarget.id) resetForm()
+      setDeleteTarget(null)
       await requestTransactions()
       onDataChanged()
     } catch (requestError) {
       handleRequestError(requestError)
+    } finally {
+      setDeleting(false)
     }
   }
 
   return (
-    <section className="workspace transaction-workspace">
-      <article className="panel form-panel sticky-panel">
-        <div className="section-heading">
-          <div><span className="section-index">ENTRY</span><h2>{editingId ? "Edit entry" : "New entry"}</h2></div>
-          {editingId && <button className="text-button" type="button" onClick={resetForm}>Cancel</button>}
-        </div>
-
-        <form onSubmit={submitTransaction} className="transaction-form">
-          <label>Type
-            <select name="type" value={form.type} onChange={updateField}>
-              <option value="expense">Expense</option><option value="income">Income</option>
-            </select>
-          </label>
-          <label>Description
-            <input name="description" value={form.description} onChange={updateField} placeholder="e.g. Supermarket" maxLength="200" />
-          </label>
-          <div className="form-row">
-            <label>Amount<input name="amount" type="number" min="0.01" max="9999999999.99" step="0.01" value={form.amount} onChange={updateField} placeholder="0.00" /></label>
-            <label>Date<input name="transaction_date" type="date" value={form.transaction_date} onChange={updateField} /></label>
-          </div>
-          <label>Category
-            <select name="category_id" value={form.category_id} onChange={updateField}>
-              <option value="">Select category</option>
-              {availableCategories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
-            </select>
-          </label>
-          <button className="primary-button" type="submit" disabled={saving}>{saving ? "Saving..." : editingId ? "Save changes" : "Add transaction"}</button>
-        </form>
-        {error && <p className="error-message">{error}</p>}
-      </article>
-
-      <article className="panel transactions-panel">
-        <div className="section-heading transaction-heading-stack">
-          <div><span className="section-index">LEDGER</span><h2>Activity</h2></div>
-          <span className="count-badge">{transactions.length} loaded</span>
-        </div>
-
-        <div className="transaction-filters">
-          <div className="search-field"><Icon name="search" size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search activity..." maxLength="100" /></div>
-          <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
-            <option value="all">All types</option><option value="income">Income</option><option value="expense">Expenses</option>
-          </select>
-          <input type="month" value={monthFilter} onChange={event => setMonthFilter(event.target.value)} aria-label="Filter by month" />
-          {monthFilter && <button className="text-button" type="button" onClick={() => setMonthFilter("")}>All months</button>}
-        </div>
-
-        {loading ? <p className="empty-state">Loading transactions...</p> : transactions.length === 0 ? (
-          <p className="empty-state">No transactions match these filters.</p>
-        ) : (
-          <>
-            <div className="transaction-list">
-              {transactions.map(transaction => (
-                <div className="transaction-row" key={transaction.id}>
-                  <div className={`transaction-icon ${transaction.type}`}><Icon name={transaction.type === "income" ? "income" : "expense"} size={17} /></div>
-                  <div className="transaction-main"><strong>{transaction.description}</strong><span>{transaction.category_name || "Uncategorized"} · {transaction.transaction_date.slice(0, 10)}</span></div>
-                  <strong className={`transaction-amount ${transaction.type}`}>{transaction.type === "income" ? "+" : "−"}{money.format(transaction.amount)}</strong>
-                  <div className="row-actions">
-                    <button className="row-icon-button" type="button" onClick={() => startEditing(transaction)} title="Edit transaction"><Icon name="edit" size={16} /><span>Edit</span></button>
-                    <button className="row-icon-button danger" type="button" onClick={() => deleteTransaction(transaction.id)} title="Delete transaction"><Icon name="trash" size={16} /><span>Delete</span></button>
-                  </div>
-                </div>
-              ))}
+    <>
+      <section className="workspace transaction-workspace">
+        <article className="panel form-panel sticky-panel friendly-form-panel">
+          <div className="section-heading friendly-heading">
+            <div>
+              <span className="eyebrow">{editingId ? "Updating a movement" : "Quick add"}</span>
+              <h2>{editingId ? "Edit transaction" : "Add a transaction"}</h2>
+              <p>{editingId ? "Change only what you need." : "A few details and you’re done."}</p>
             </div>
-            {nextCursor && (
-              <button className="secondary-button load-more-button" type="button" disabled={loadingMore} onClick={() => requestTransactions({ append: true, cursor: nextCursor })}>
-                {loadingMore ? "Loading..." : "Load more"}
-              </button>
-            )}
-          </>
-        )}
-      </article>
-    </section>
+            {editingId && <button className="text-button" type="button" onClick={resetForm}>Cancel edit</button>}
+          </div>
+
+          <form onSubmit={submitTransaction} className="transaction-form friendly-form">
+            <fieldset className="type-picker">
+              <legend>What kind of movement?</legend>
+              <div className="segmented-control">
+                <button type="button" className={form.type === "expense" ? "active expense-choice" : ""} onClick={() => setType("expense")}>
+                  <Icon name="expense" size={16} /> Expense
+                </button>
+                <button type="button" className={form.type === "income" ? "active income-choice" : ""} onClick={() => setType("income")}>
+                  <Icon name="income" size={16} /> Income
+                </button>
+              </div>
+            </fieldset>
+
+            <label>
+              <span>What was it?</span>
+              <input name="description" value={form.description} onChange={updateField} placeholder="Supermarket, salary, coffee..." maxLength="200" />
+            </label>
+
+            <div className="form-row">
+              <label><span>How much?</span><div className="money-input"><span>$</span><input name="amount" type="number" min="0.01" max="9999999999.99" step="0.01" value={form.amount} onChange={updateField} placeholder="0.00" /></div></label>
+              <label><span>When?</span><input name="transaction_date" type="date" value={form.transaction_date} onChange={updateField} /></label>
+            </div>
+
+            <label>
+              <span>Category</span>
+              <select name="category_id" value={form.category_id} onChange={updateField}>
+                <option value="">Choose one</option>
+                {availableCategories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+            </label>
+
+            <button className="primary-button friendly-primary" type="submit" disabled={saving}>
+              {saving ? "Saving..." : editingId ? "Save changes" : form.type === "income" ? "Add income" : "Add expense"}
+            </button>
+          </form>
+          {error && <p className="error-message">{error}</p>}
+        </article>
+
+        <article className="panel transactions-panel activity-panel">
+          <div className="section-heading friendly-heading activity-heading">
+            <div>
+              <span className="eyebrow">Your history</span>
+              <h2>Activity</h2>
+              <p>Everything that moved, all in one place.</p>
+            </div>
+            <span className="count-badge">{transactions.length} shown</span>
+          </div>
+
+          <div className="transaction-filters">
+            <div className="search-field"><Icon name="search" size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search by description..." maxLength="100" /></div>
+            <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
+              <option value="all">All activity</option><option value="income">Income</option><option value="expense">Expenses</option>
+            </select>
+            <input type="month" value={monthFilter} onChange={event => setMonthFilter(event.target.value)} aria-label="Filter by month" />
+            {monthFilter && <button className="text-button" type="button" onClick={() => setMonthFilter("")}>Clear month</button>}
+          </div>
+
+          {loading ? <p className="empty-state">Bringing your activity in...</p> : transactions.length === 0 ? (
+            <div className="empty-state illustrated-empty"><span>◎</span><strong>Nothing here yet</strong><p>Try another filter or add your first transaction.</p></div>
+          ) : (
+            <>
+              <div className="transaction-list">
+                {transactions.map(transaction => (
+                  <div className="transaction-row" key={transaction.id}>
+                    <div className={`transaction-icon ${transaction.type}`}><Icon name={transaction.type === "income" ? "income" : "expense"} size={17} /></div>
+                    <div className="transaction-main"><strong>{transaction.description}</strong><span>{transaction.category_name || "Uncategorized"} · {transaction.transaction_date.slice(0, 10)}</span></div>
+                    <strong className={`transaction-amount ${transaction.type}`}>{transaction.type === "income" ? "+" : "−"}{money.format(transaction.amount)}</strong>
+                    <div className="row-actions">
+                      <button className="row-icon-button" type="button" onClick={() => startEditing(transaction)} title="Edit transaction"><Icon name="edit" size={15} /><span>Edit</span></button>
+                      <button className="row-icon-button danger" type="button" onClick={() => setDeleteTarget(transaction)} title="Delete transaction"><Icon name="trash" size={15} /><span>Delete</span></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {nextCursor && (
+                <button className="secondary-button load-more-button" type="button" disabled={loadingMore} onClick={() => requestTransactions({ append: true, cursor: nextCursor })}>
+                  {loadingMore ? "Loading..." : "Show more activity"}
+                </button>
+              )}
+            </>
+          )}
+        </article>
+      </section>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this transaction?"
+        message={deleteTarget ? `“${deleteTarget.description}” will be removed from your activity. This can’t be undone.` : ""}
+        confirmLabel="Delete transaction"
+        tone="danger"
+        busy={deleting}
+        onCancel={() => !deleting && setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+    </>
   )
 }
 

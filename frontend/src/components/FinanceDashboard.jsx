@@ -14,10 +14,10 @@ const navigation = [
 ]
 
 const pageMeta = {
-  overview: { title: "Home", copy: "Your money for the month, without the noise." },
-  transactions: { title: "Activity", copy: "Every movement in your ledger." },
-  categories: { title: "Categories", copy: "The rules behind how your money is organized." },
-  security: { title: "Security", copy: "Sessions, access and account controls." }
+  overview: { title: "Home", copy: "Here’s how your month is going." },
+  transactions: { title: "Activity", copy: "Add something in seconds, find anything later." },
+  categories: { title: "Categories", copy: "Keep your money organized in a way that feels natural." },
+  security: { title: "Security", copy: "See where you’re signed in and stay in control." }
 }
 
 function initials(name = "User") {
@@ -72,7 +72,7 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
           <div className="brand-mark">S</div>
           <div>
             <strong>Suma</strong>
-            <span>Personal ledger</span>
+            <span>Your money, made clearer</span>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
 
         <div className="sidebar-footer-note">
           <span className="status-dot" />
-          <span>Private workspace</span>
+          <span>Private and synced</span>
         </div>
 
         <div className="sidebar-account">
@@ -115,7 +115,7 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
           </div>
 
           <div className="topbar-actions">
-            <span className="workspace-state"><span className="sync-dot" />Synced</span>
+            <span className="workspace-state"><span className="sync-dot" />Up to date</span>
             <div className="topbar-user">
               <div className="avatar small">{initials(user.name)}</div>
               <strong>{user.name.split(" ")[0]}</strong>

@@ -55,14 +55,14 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
         <div className="auth-showcase">
           <div className="auth-brand">
             <div className="brand-mark light">S</div>
-            <div><strong>Suma</strong><span>Personal ledger</span></div>
+            <div><strong>Suma</strong><span>Your money, made clearer</span></div>
           </div>
 
           <div className="auth-intro">
-            <p className="auth-kicker">Your money, in one place.</p>
-            <h1>A ledger you can actually read.</h1>
+            <p className="auth-kicker">A calmer way to keep track.</p>
+            <h1>Know where your money is going without making it a chore.</h1>
             <p className="auth-copy">
-              Track activity, set monthly limits and keep savings goals visible without turning your finances into a dashboard circus.
+              See what came in, what went out and what you’re saving for — all in a place that stays easy to read.
             </p>
           </div>
 
@@ -86,7 +86,7 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
             </div>
           </div>
 
-          <p className="auth-footnote">Secure sessions · PostgreSQL-backed · built for clear financial decisions</p>
+          <p className="auth-footnote">Private by default · simple enough to use every day</p>
         </div>
 
         <div className="auth-form-side">
@@ -94,7 +94,7 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
             <div className="auth-card-heading">
               <span className="auth-mode-label">{mode === "login" ? "SIGN IN" : "NEW ACCOUNT"}</span>
               <h2>{mode === "login" ? "Welcome back" : "Create your ledger"}</h2>
-              <p>{mode === "login" ? "Continue where you left off." : "Start with a private account and your own categories."}</p>
+              <p>{mode === "login" ? "Good to see you again." : "A couple of details and your space is ready."}</p>
             </div>
 
             <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
@@ -128,7 +128,7 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
 
             {error && <p className="error-message">{error}</p>}
 
-            <p className="auth-security-note"><Icon name="lock" size={14} /> Passwords are hashed. Sessions are revocable.</p>
+            <p className="auth-security-note"><Icon name="lock" size={14} /> Your account uses secure, revocable sessions.</p>
           </article>
         </div>
       </section>

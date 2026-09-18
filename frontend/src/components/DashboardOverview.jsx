@@ -93,7 +93,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   async function saveBudget(event) {
     event.preventDefault()
     if (!budgetForm.category_id || !budgetForm.amount) {
-      setError("Selecciona categoría y monto para el presupuesto")
+      setError("Choose a category and amount for the budget.")
       return
     }
 
@@ -134,7 +134,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   async function createGoal(event) {
     event.preventDefault()
     if (!goalForm.name.trim() || !goalForm.target_amount) {
-      setError("Completa nombre y monto objetivo de la meta")
+      setError("Add a name and target amount for the goal.")
       return
     }
 
@@ -160,7 +160,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   async function addToGoal(goal) {
     const amount = Number(goalContributions[goal.id])
     if (!Number.isFinite(amount) || amount <= 0) {
-      setError("Ingresa un aporte mayor que cero")
+      setError("Add an amount greater than zero.")
       return
     }
 
@@ -200,8 +200,15 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
         <div className="ledger-header">
           <div>
             <span className="ledger-period">{monthLabel(month, true).toUpperCase()}</span>
-            <p>Available balance</p>
+            <p>Available this month</p>
             <strong className="ledger-balance">{money.format(summary.balance)}</strong>
+            <span className="ledger-nudge">
+              {summary.savings_rate == null
+                ? "Add a few transactions and Suma will start showing your monthly rhythm."
+                : summary.savings_rate >= 0
+                  ? `You’ve kept ${summary.savings_rate.toFixed(1)}% of what came in this month.`
+                  : "Expenses are currently ahead of income this month."}
+            </span>
           </div>
           <label className="month-control minimal">
             <Icon name="calendar" size={15} />
@@ -210,11 +217,11 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
         </div>
 
         <div className="ledger-metrics">
-          <div><span>Income</span><strong className="metric-positive">+{money.format(summary.income)}</strong></div>
-          <div><span>Expenses</span><strong>−{money.format(summary.expenses)}</strong></div>
+          <div><span>Money in</span><strong className="metric-positive">+{money.format(summary.income)}</strong></div>
+          <div><span>Money out</span><strong>−{money.format(summary.expenses)}</strong></div>
           <div><span>Kept</span><strong>{summary.savings_rate == null ? "—" : `${summary.savings_rate.toFixed(1)}%`}</strong></div>
           <div>
-            <span>Vs. previous month</span>
+            <span>Compared with last month</span>
             <strong>{monthExpenseDelta == null ? "No baseline" : `${monthExpenseDelta > 0 ? "+" : ""}${monthExpenseDelta.toFixed(1)}% spend`}</strong>
           </div>
         </div>
@@ -226,10 +233,10 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
         <article className="data-section cashflow-section">
           <div className="section-heading understated">
             <div>
-              <span className="section-index">01</span>
-              <h2>Cash flow</h2>
+              <span className="eyebrow">Last six months</span>
+              <h2>Your cash flow</h2>
             </div>
-            <span className="muted-label">6 month view</span>
+            <span className="muted-label">Income vs. expenses</span>
           </div>
 
           {loading ? <p className="empty-state">Loading cash flow…</p> : (
@@ -251,14 +258,14 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
         <article className="data-section budget-health-section">
           <div className="section-heading understated">
             <div>
-              <span className="section-index">02</span>
-              <h2>Budget health</h2>
+              <span className="eyebrow">This month</span>
+              <h2>Your budgets</h2>
             </div>
             {budgets.length > 0 && <strong className="budget-total">{money.format(budgetTotals.remaining)} left</strong>}
           </div>
 
           {budgets.length === 0 ? (
-            <p className="empty-state compact">No limits set for this month.</p>
+            <p className="empty-state compact">No budgets yet. Add one when you want a gentle spending limit.</p>
           ) : (
             <div className="budget-list compact-budget-list">
               {budgets.slice(0, 5).map(budget => {
@@ -278,7 +285,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
           )}
 
           <details className="inline-disclosure">
-            <summary><Icon name="plus" size={14} /> Set a monthly budget</summary>
+            <summary><Icon name="plus" size={14} /> Add a monthly budget</summary>
             <form className="inline-form budget-form" onSubmit={saveBudget}>
               <select value={budgetForm.category_id} onChange={event => setBudgetForm(current => ({ ...current, category_id: event.target.value }))}>
                 <option value="">Expense category</option>
@@ -294,7 +301,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
       <section className="home-grid lower-home-grid">
         <article className="data-section spending-section">
           <div className="section-heading understated">
-            <div><span className="section-index">03</span><h2>Where it went</h2></div>
+            <div><span className="eyebrow">Spending</span><h2>Where it went</h2></div>
             <span className="muted-label">{money.format(expenseTotal)} total</span>
           </div>
           {analytics?.expense_categories?.length ? (
@@ -316,7 +323,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
 
         <article className="data-section goals-section">
           <div className="section-heading understated">
-            <div><span className="section-index">04</span><h2>Goals</h2></div>
+            <div><span className="eyebrow">Saving</span><h2>Your goals</h2></div>
             <span className="muted-label">{goals.length} active</span>
           </div>
 
@@ -361,11 +368,11 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
 
       <section className="recent-section data-section">
         <div className="section-heading understated">
-          <div><span className="section-index">05</span><h2>Recent activity</h2></div>
-          <span className="muted-label">Latest entries</span>
+          <div><span className="eyebrow">Latest</span><h2>Recent activity</h2></div>
+          <span className="muted-label">A quick look back</span>
         </div>
 
-        {recentTransactions.length === 0 ? <p className="empty-state compact">No transactions yet.</p> : (
+        {recentTransactions.length === 0 ? <p className="empty-state compact">Nothing has moved yet. Your latest activity will show up here.</p> : (
           <div className="recent-ledger">
             {recentTransactions.map(transaction => (
               <div className="recent-ledger-row" key={transaction.id}>
