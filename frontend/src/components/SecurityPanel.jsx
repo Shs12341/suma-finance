@@ -83,7 +83,7 @@ function SecurityPanel({ onSessionExpired, onAllSessionsRevoked }) {
     <section className="security-layout">
       <article className="panel security-summary-panel">
         <div className="security-hero-icon"><Icon name="security" size={23} /></div>
-        <p className="eyebrow">Account security</p>
+        <span className="section-index">ACCOUNT</span>
         <h2>Active sessions</h2>
         <p className="security-copy">
           Sessions are stored server-side and can be revoked immediately. Logging out now invalidates the issued token instead of only removing the browser cookie.
@@ -96,7 +96,7 @@ function SecurityPanel({ onSessionExpired, onAllSessionsRevoked }) {
 
       <article className="panel">
         <div className="section-heading">
-          <div><p className="eyebrow">Session control</p><h2>Signed-in clients</h2></div>
+          <div><span className="section-index">SESSIONS</span><h2>Signed-in clients</h2></div>
           <span className="count-badge">{sessions.length}</span>
         </div>
 

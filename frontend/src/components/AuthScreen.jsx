@@ -54,44 +54,47 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
       <section className="auth-layout">
         <div className="auth-showcase">
           <div className="auth-brand">
-            <div className="brand-mark light">F</div>
-            <div><strong>Finance</strong><span>Money, made clear.</span></div>
+            <div className="brand-mark light">S</div>
+            <div><strong>Suma</strong><span>Personal ledger</span></div>
           </div>
 
           <div className="auth-intro">
-            <span className="auth-kicker"><Icon name="sparkles" size={15} /> Secure personal finance</span>
-            <h1>Take control of your money without the noise.</h1>
+            <p className="auth-kicker">Your money, in one place.</p>
+            <h1>A ledger you can actually read.</h1>
             <p className="auth-copy">
-              Track spending, build budgets and grow savings goals inside one private, beautifully organized workspace.
+              Track activity, set monthly limits and keep savings goals visible without turning your finances into a dashboard circus.
             </p>
           </div>
 
-          <div className="auth-preview" aria-hidden="true">
-            <div className="preview-glow" />
-            <div className="preview-card preview-balance">
-              <div className="preview-card-top"><span>Available balance</span><span className="preview-chip">This month</span></div>
-              <strong>$4,820.40</strong>
-              <div className="preview-stats"><span>Income <b>+$2,480</b></span><span>Expenses <b>−$1,120</b></span></div>
+          <div className="statement-preview" aria-hidden="true">
+            <div className="statement-head">
+              <div>
+                <span>September balance</span>
+                <strong>$4,820.40</strong>
+              </div>
+              <span className="statement-period">SEP 2026</span>
             </div>
-            <div className="preview-card preview-activity">
-              <div className="preview-row"><span className="preview-dot green" /><div><b>Freelance payment</b><small>Income</small></div><strong>+$680</strong></div>
-              <div className="preview-row"><span className="preview-dot coral" /><div><b>Groceries</b><small>Food</small></div><strong>−$62</strong></div>
+            <div className="statement-summary">
+              <span><small>IN</small><strong>+$2,480.00</strong></span>
+              <span><small>OUT</small><strong>−$1,120.35</strong></span>
+              <span><small>KEPT</small><strong>54.8%</strong></span>
+            </div>
+            <div className="statement-lines">
+              <div><span>17 Sep</span><strong>Freelance payment</strong><b className="positive">+$680.00</b></div>
+              <div><span>16 Sep</span><strong>Supermarket</strong><b>−$62.40</b></div>
+              <div><span>14 Sep</span><strong>Internet</strong><b>−$40.00</b></div>
             </div>
           </div>
 
-          <div className="auth-trust-row">
-            <span><Icon name="lock" size={15} /> HttpOnly sessions</span>
-            <span><Icon name="security" size={15} /> Revocable access</span>
-            <span><Icon name="wallet" size={15} /> PostgreSQL data</span>
-          </div>
+          <p className="auth-footnote">Secure sessions · PostgreSQL-backed · built for clear financial decisions</p>
         </div>
 
         <div className="auth-form-side">
           <article className="auth-card">
             <div className="auth-card-heading">
-              <p className="eyebrow">{mode === "login" ? "Welcome back" : "Start your workspace"}</p>
-              <h2>{mode === "login" ? "Log in to Finance" : "Create your account"}</h2>
-              <p>{mode === "login" ? "Your financial workspace is ready when you are." : "Set up a private account in less than a minute."}</p>
+              <span className="auth-mode-label">{mode === "login" ? "SIGN IN" : "NEW ACCOUNT"}</span>
+              <h2>{mode === "login" ? "Welcome back" : "Create your ledger"}</h2>
+              <p>{mode === "login" ? "Continue where you left off." : "Start with a private account and your own categories."}</p>
             </div>
 
             <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
@@ -108,7 +111,7 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
               )}
 
               <label>
-                <span>Email address</span>
+                <span>Email</span>
                 <input name="email" type="email" value={form.email} onChange={updateField} autoComplete="email" placeholder="you@example.com" maxLength="150" required />
               </label>
 
@@ -119,13 +122,13 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
 
               <button className="primary-button auth-submit" type="submit" disabled={submitting}>
                 {submitting ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
-                {!submitting && <Icon name="chevron" size={16} />}
+                {!submitting && <Icon name="chevron" size={15} />}
               </button>
             </form>
 
             {error && <p className="error-message">{error}</p>}
 
-            <div className="auth-security-note"><Icon name="lock" size={15} /><span>Your password is hashed and your session token stays out of React.</span></div>
+            <p className="auth-security-note"><Icon name="lock" size={14} /> Passwords are hashed. Sessions are revocable.</p>
           </article>
         </div>
       </section>

@@ -5,10 +5,19 @@ import Icon from "./Icon"
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 const currentMonth = new Date().toISOString().slice(0, 7)
 
-function monthLabel(value) {
+function monthLabel(value, long = false) {
   const [year, month] = value.split("-")
-  return new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit", timeZone: "UTC" })
-    .format(new Date(`${year}-${month}-01T00:00:00Z`))
+  return new Intl.DateTimeFormat("en-US", {
+    month: long ? "long" : "short",
+    year: long ? "numeric" : "2-digit",
+    timeZone: "UTC"
+  }).format(new Date(`${year}-${month}-01T00:00:00Z`))
+}
+
+function shortDate(value) {
+  if (!value) return "—"
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
+    .format(new Date(`${value.slice(0, 10)}T00:00:00Z`))
 }
 
 function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExpired }) {
@@ -16,6 +25,7 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   const [analytics, setAnalytics] = useState(null)
   const [budgets, setBudgets] = useState([])
   const [goals, setGoals] = useState([])
+  const [recentTransactions, setRecentTransactions] = useState([])
   const [budgetForm, setBudgetForm] = useState({ category_id: "", amount: "" })
   const [goalForm, setGoalForm] = useState({ name: "", target_amount: "", saved_amount: "", target_date: "" })
   const [goalContributions, setGoalContributions] = useState({})
@@ -34,14 +44,16 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
     try {
       setLoading(true)
       setError("")
-      const [analyticsData, budgetsData, goalsData] = await Promise.all([
+      const [analyticsData, budgetsData, goalsData, transactionsData] = await Promise.all([
         apiFetch(`/analytics?month=${month}&months=6`),
         apiFetch(`/budgets?month=${month}`),
-        apiFetch("/goals")
+        apiFetch("/goals"),
+        apiFetch("/transactions?limit=6")
       ])
       setAnalytics(analyticsData)
       setBudgets(budgetsData)
       setGoals(goalsData)
+      setRecentTransactions(transactionsData.items || [])
     } catch (requestError) {
       handleRequestError(requestError)
     } finally {
@@ -67,10 +79,16 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
     return Math.max(1, ...analytics.history.flatMap(item => [item.income, item.expenses]))
   }, [analytics])
 
-  const expenseMax = useMemo(() => {
-    if (!analytics?.expense_categories?.length) return 1
-    return Math.max(1, ...analytics.expense_categories.map(item => item.amount))
+  const expenseTotal = useMemo(() => {
+    return analytics?.expense_categories?.reduce((sum, item) => sum + item.amount, 0) || 0
   }, [analytics])
+
+  const previousMonth = useMemo(() => {
+    if (!analytics?.history?.length) return null
+    const selectedIndex = analytics.history.findIndex(item => item.month === month)
+    if (selectedIndex <= 0) return analytics.history.at(-2) || null
+    return analytics.history[selectedIndex - 1] || null
+  }, [analytics, month])
 
   async function saveBudget(event) {
     event.preventDefault()
@@ -172,58 +190,50 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   }
 
   const summary = analytics?.summary || { income: 0, expenses: 0, balance: 0, savings_rate: null }
+  const monthExpenseDelta = previousMonth && previousMonth.expenses > 0
+    ? ((summary.expenses - previousMonth.expenses) / previousMonth.expenses) * 100
+    : null
 
   return (
     <section className="overview-stack">
-      <div className="overview-toolbar">
-        <div className="overview-intro">
-          <span className="soft-kicker"><Icon name="sparkles" size={14} /> Monthly pulse</span>
-          <p>Everything important for the selected month, at a glance.</p>
+      <section className="ledger-surface">
+        <div className="ledger-header">
+          <div>
+            <span className="ledger-period">{monthLabel(month, true).toUpperCase()}</span>
+            <p>Available balance</p>
+            <strong className="ledger-balance">{money.format(summary.balance)}</strong>
+          </div>
+          <label className="month-control minimal">
+            <Icon name="calendar" size={15} />
+            <input type="month" value={month} onChange={event => setMonth(event.target.value)} aria-label="Selected month" />
+          </label>
         </div>
-        <label className="month-control">
-          <span><Icon name="calendar" size={15} /> Month</span>
-          <input type="month" value={month} onChange={event => setMonth(event.target.value)} />
-        </label>
-      </div>
 
-      <section className="summary-grid summary-grid-four" aria-label="Monthly financial summary">
-        <article className="summary-card summary-card-primary">
-          <div className="summary-card-top"><div className="summary-icon"><Icon name="wallet" size={19} /></div><span>Net balance</span></div>
-          <strong>{money.format(summary.balance)}</strong>
-          <small>Available for {monthLabel(month)}</small>
-          <div className="summary-orb" />
-        </article>
-        <article className="summary-card">
-          <div className="summary-card-top"><div className="summary-icon income"><Icon name="income" size={18} /></div><span>Income</span></div>
-          <strong>{money.format(summary.income)}</strong>
-          <small><span className="positive-dot" /> Money in this month</small>
-        </article>
-        <article className="summary-card">
-          <div className="summary-card-top"><div className="summary-icon expense"><Icon name="expense" size={18} /></div><span>Expenses</span></div>
-          <strong>{money.format(summary.expenses)}</strong>
-          <small><span className="negative-dot" /> Money out this month</small>
-        </article>
-        <article className="summary-card">
-          <div className="summary-card-top"><div className="summary-icon savings"><Icon name="savings" size={18} /></div><span>Savings rate</span></div>
-          <strong>{summary.savings_rate == null ? "—" : `${summary.savings_rate.toFixed(1)}%`}</strong>
-          <small>{summary.savings_rate == null ? "Add income to calculate" : "Share of income kept"}</small>
-        </article>
+        <div className="ledger-metrics">
+          <div><span>Income</span><strong className="metric-positive">+{money.format(summary.income)}</strong></div>
+          <div><span>Expenses</span><strong>−{money.format(summary.expenses)}</strong></div>
+          <div><span>Kept</span><strong>{summary.savings_rate == null ? "—" : `${summary.savings_rate.toFixed(1)}%`}</strong></div>
+          <div>
+            <span>Vs. previous month</span>
+            <strong>{monthExpenseDelta == null ? "No baseline" : `${monthExpenseDelta > 0 ? "+" : ""}${monthExpenseDelta.toFixed(1)}% spend`}</strong>
+          </div>
+        </div>
       </section>
 
       {error && <p className="error-message">{error}</p>}
 
-      <section className="analytics-grid">
-        <article className="panel chart-panel">
-          <div className="section-heading">
+      <section className="home-grid">
+        <article className="data-section cashflow-section">
+          <div className="section-heading understated">
             <div>
-              <p className="eyebrow">Analytics</p>
-              <h2>Income vs expenses</h2>
+              <span className="section-index">01</span>
+              <h2>Cash flow</h2>
             </div>
-            <span className="muted-label">Last 6 months</span>
+            <span className="muted-label">6 month view</span>
           </div>
 
-          {loading ? <p className="empty-state">Loading analytics...</p> : (
-            <div className="bar-chart" aria-label="Income and expenses by month">
+          {loading ? <p className="empty-state">Loading cash flow…</p> : (
+            <div className="bar-chart editorial" aria-label="Income and expenses by month">
               {analytics?.history.map(item => (
                 <div className="bar-column" key={item.month}>
                   <div className="bar-pair">
@@ -235,110 +245,140 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
               ))}
             </div>
           )}
-          <div className="chart-legend"><span><i className="legend-dot income" />Income</span><span><i className="legend-dot expense" />Expenses</span></div>
+          <div className="chart-legend"><span><i className="legend-dot income" />Money in</span><span><i className="legend-dot expense" />Money out</span></div>
         </article>
 
-        <article className="panel category-spend-panel">
-          <div className="section-heading">
+        <article className="data-section budget-health-section">
+          <div className="section-heading understated">
             <div>
-              <p className="eyebrow">Breakdown</p>
-              <h2>Spending by category</h2>
+              <span className="section-index">02</span>
+              <h2>Budget health</h2>
             </div>
-          </div>
-          {analytics?.expense_categories?.length ? (
-            <div className="breakdown-list">
-              {analytics.expense_categories.map(item => (
-                <div className="breakdown-item" key={item.category_name}>
-                  <div><strong>{item.category_name}</strong><span>{money.format(item.amount)}</span></div>
-                  <div className="progress-track"><div className="progress-fill neutral" style={{ width: `${(item.amount / expenseMax) * 100}%` }} /></div>
-                </div>
-              ))}
-            </div>
-          ) : <p className="empty-state compact">No expenses in this month yet.</p>}
-        </article>
-      </section>
-
-      <section className="planning-grid">
-        <article className="panel">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Planning</p>
-              <h2>Monthly budgets</h2>
-            </div>
-            {budgets.length > 0 && <span className="muted-label">{money.format(budgetTotals.spent)} / {money.format(budgetTotals.planned)}</span>}
+            {budgets.length > 0 && <strong className="budget-total">{money.format(budgetTotals.remaining)} left</strong>}
           </div>
 
-          <form className="inline-form budget-form" onSubmit={saveBudget}>
-            <select value={budgetForm.category_id} onChange={event => setBudgetForm(current => ({ ...current, category_id: event.target.value }))}>
-              <option value="">Expense category</option>
-              {expenseCategories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}
-            </select>
-            <input type="number" min="0.01" step="0.01" placeholder="Budget amount" value={budgetForm.amount} onChange={event => setBudgetForm(current => ({ ...current, amount: event.target.value }))} />
-            <button className="primary-button compact-button" type="submit">Save</button>
-          </form>
-
-          {budgets.length === 0 ? <p className="empty-state compact">No budgets for {month}. Add one above.</p> : (
-            <div className="budget-list">
-              {budgets.map(budget => {
+          {budgets.length === 0 ? (
+            <p className="empty-state compact">No limits set for this month.</p>
+          ) : (
+            <div className="budget-list compact-budget-list">
+              {budgets.slice(0, 5).map(budget => {
                 const percent = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0
                 const over = percent > 100
                 return (
-                  <div className="budget-item" key={budget.id}>
+                  <div className="budget-item compact-budget" key={budget.id}>
                     <div className="budget-topline">
-                      <div><strong>{budget.category_name}</strong><span>{money.format(budget.spent)} of {money.format(budget.amount)}</span></div>
-                      <button className="text-button danger-text" type="button" onClick={() => deleteBudget(budget.id)}>Remove</button>
+                      <div><strong>{budget.category_name}</strong><span>{money.format(budget.spent)} / {money.format(budget.amount)}</span></div>
+                      <span className={over ? "budget-status over-text" : "budget-status"}>{Math.round(percent)}%</span>
                     </div>
                     <div className="progress-track"><div className={`progress-fill ${over ? "over" : "budget"}`} style={{ width: `${Math.min(percent, 100)}%` }} /></div>
-                    <small className={over ? "over-text" : "muted-label"}>{over ? `${money.format(Math.abs(budget.remaining))} over budget` : `${money.format(budget.remaining)} remaining`}</small>
                   </div>
                 )
               })}
             </div>
           )}
+
+          <details className="inline-disclosure">
+            <summary><Icon name="plus" size={14} /> Set a monthly budget</summary>
+            <form className="inline-form budget-form" onSubmit={saveBudget}>
+              <select value={budgetForm.category_id} onChange={event => setBudgetForm(current => ({ ...current, category_id: event.target.value }))}>
+                <option value="">Expense category</option>
+                {expenseCategories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}
+              </select>
+              <input type="number" min="0.01" step="0.01" placeholder="Amount" value={budgetForm.amount} onChange={event => setBudgetForm(current => ({ ...current, amount: event.target.value }))} />
+              <button className="primary-button compact-button" type="submit">Save</button>
+            </form>
+          </details>
+        </article>
+      </section>
+
+      <section className="home-grid lower-home-grid">
+        <article className="data-section spending-section">
+          <div className="section-heading understated">
+            <div><span className="section-index">03</span><h2>Where it went</h2></div>
+            <span className="muted-label">{money.format(expenseTotal)} total</span>
+          </div>
+          {analytics?.expense_categories?.length ? (
+            <div className="spending-table">
+              {analytics.expense_categories.map(item => {
+                const share = expenseTotal > 0 ? (item.amount / expenseTotal) * 100 : 0
+                return (
+                  <div className="spending-row" key={item.category_name}>
+                    <strong>{item.category_name}</strong>
+                    <div className="spending-line"><span style={{ width: `${Math.max(2, share)}%` }} /></div>
+                    <span>{share.toFixed(0)}%</span>
+                    <b>{money.format(item.amount)}</b>
+                  </div>
+                )
+              })}
+            </div>
+          ) : <p className="empty-state compact">No spending recorded for this month.</p>}
         </article>
 
-        <article className="panel">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Future</p>
-              <h2>Savings goals</h2>
-            </div>
+        <article className="data-section goals-section">
+          <div className="section-heading understated">
+            <div><span className="section-index">04</span><h2>Goals</h2></div>
+            <span className="muted-label">{goals.length} active</span>
           </div>
 
-          <form className="goal-form" onSubmit={createGoal}>
-            <input placeholder="Goal name" maxLength="120" value={goalForm.name} onChange={event => setGoalForm(current => ({ ...current, name: event.target.value }))} />
-            <div className="form-row">
-              <input type="number" min="0.01" step="0.01" placeholder="Target amount" value={goalForm.target_amount} onChange={event => setGoalForm(current => ({ ...current, target_amount: event.target.value }))} />
-              <input type="number" min="0" step="0.01" placeholder="Already saved" value={goalForm.saved_amount} onChange={event => setGoalForm(current => ({ ...current, saved_amount: event.target.value }))} />
-            </div>
-            <div className="form-row">
-              <input type="date" value={goalForm.target_date} onChange={event => setGoalForm(current => ({ ...current, target_date: event.target.value }))} />
-              <button className="primary-button" type="submit">Create goal</button>
-            </div>
-          </form>
-
           {goals.length === 0 ? <p className="empty-state compact">No savings goals yet.</p> : (
-            <div className="goal-list">
-              {goals.map(goal => {
+            <div className="goal-list concise-goals">
+              {goals.slice(0, 4).map(goal => {
                 const percent = goal.target_amount > 0 ? (goal.saved_amount / goal.target_amount) * 100 : 0
                 return (
-                  <div className="goal-item" key={goal.id}>
+                  <div className="goal-item concise-goal" key={goal.id}>
                     <div className="goal-heading">
-                      <div><strong>{goal.name}</strong><span>{money.format(goal.saved_amount)} / {money.format(goal.target_amount)}</span></div>
-                      <button className="text-button danger-text" type="button" onClick={() => deleteGoal(goal.id)}>Delete</button>
+                      <div><strong>{goal.name}</strong><span>{money.format(goal.saved_amount)} of {money.format(goal.target_amount)}</span></div>
+                      <b>{Math.min(percent, 999).toFixed(0)}%</b>
                     </div>
                     <div className="progress-track"><div className="progress-fill goal" style={{ width: `${Math.min(percent, 100)}%` }} /></div>
-                    <div className="goal-meta"><span>{Math.min(percent, 999).toFixed(1)}%</span><span>{goal.target_date ? `Target ${goal.target_date}` : "No target date"}</span></div>
-                    <div className="goal-contribution">
+                    <div className="goal-actions-line">
                       <input type="number" min="0.01" step="0.01" placeholder="Add funds" value={goalContributions[goal.id] || ""} onChange={event => setGoalContributions(current => ({ ...current, [goal.id]: event.target.value }))} />
-                      <button className="secondary-button" type="button" onClick={() => addToGoal(goal)}>Add</button>
+                      <button className="text-button" type="button" onClick={() => addToGoal(goal)}>Add</button>
+                      <button className="text-button danger-text" type="button" onClick={() => deleteGoal(goal.id)}>Delete</button>
                     </div>
                   </div>
                 )
               })}
             </div>
           )}
+
+          <details className="inline-disclosure">
+            <summary><Icon name="plus" size={14} /> Create a goal</summary>
+            <form className="goal-form compact-goal-form" onSubmit={createGoal}>
+              <input placeholder="Goal name" maxLength="120" value={goalForm.name} onChange={event => setGoalForm(current => ({ ...current, name: event.target.value }))} />
+              <div className="form-row">
+                <input type="number" min="0.01" step="0.01" placeholder="Target amount" value={goalForm.target_amount} onChange={event => setGoalForm(current => ({ ...current, target_amount: event.target.value }))} />
+                <input type="number" min="0" step="0.01" placeholder="Already saved" value={goalForm.saved_amount} onChange={event => setGoalForm(current => ({ ...current, saved_amount: event.target.value }))} />
+              </div>
+              <div className="form-row">
+                <input type="date" value={goalForm.target_date} onChange={event => setGoalForm(current => ({ ...current, target_date: event.target.value }))} />
+                <button className="primary-button" type="submit">Create</button>
+              </div>
+            </form>
+          </details>
         </article>
+      </section>
+
+      <section className="recent-section data-section">
+        <div className="section-heading understated">
+          <div><span className="section-index">05</span><h2>Recent activity</h2></div>
+          <span className="muted-label">Latest entries</span>
+        </div>
+
+        {recentTransactions.length === 0 ? <p className="empty-state compact">No transactions yet.</p> : (
+          <div className="recent-ledger">
+            {recentTransactions.map(transaction => (
+              <div className="recent-ledger-row" key={transaction.id}>
+                <span className="recent-date">{shortDate(transaction.transaction_date)}</span>
+                <strong>{transaction.description}</strong>
+                <span>{transaction.category_name || "Uncategorized"}</span>
+                <b className={transaction.type === "income" ? "metric-positive" : ""}>
+                  {transaction.type === "income" ? "+" : "−"}{money.format(transaction.amount)}
+                </b>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </section>
   )

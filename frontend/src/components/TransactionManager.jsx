@@ -136,7 +136,7 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
     <section className="workspace transaction-workspace">
       <article className="panel form-panel sticky-panel">
         <div className="section-heading">
-          <div><p className="eyebrow">Transaction</p><h2>{editingId ? "Edit transaction" : "New transaction"}</h2></div>
+          <div><span className="section-index">ENTRY</span><h2>{editingId ? "Edit entry" : "New entry"}</h2></div>
           {editingId && <button className="text-button" type="button" onClick={resetForm}>Cancel</button>}
         </div>
 
@@ -166,12 +166,12 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
 
       <article className="panel transactions-panel">
         <div className="section-heading transaction-heading-stack">
-          <div><p className="eyebrow">Activity</p><h2>Transaction history</h2></div>
+          <div><span className="section-index">LEDGER</span><h2>Activity</h2></div>
           <span className="count-badge">{transactions.length} loaded</span>
         </div>
 
         <div className="transaction-filters">
-          <div className="search-field"><Icon name="search" size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search transactions..." maxLength="100" /></div>
+          <div className="search-field"><Icon name="search" size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search activity..." maxLength="100" /></div>
           <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
             <option value="all">All types</option><option value="income">Income</option><option value="expense">Expenses</option>
           </select>

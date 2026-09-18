@@ -50,8 +50,8 @@ function App() {
   if (checkingSession) {
     return (
       <main className="loading-screen">
-        <div className="loading-mark">F</div>
-        <p>Loading Finance App...</p>
+        <div className="loading-mark">S</div>
+        <p>Opening Suma...</p>
       </main>
     )
   }

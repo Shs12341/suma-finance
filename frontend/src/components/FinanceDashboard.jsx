@@ -7,17 +7,17 @@ import SecurityPanel from "./SecurityPanel"
 import Icon from "./Icon"
 
 const navigation = [
-  { id: "overview", label: "Overview", icon: "overview", description: "Dashboard & planning" },
-  { id: "transactions", label: "Transactions", icon: "transactions", description: "Income & expenses" },
-  { id: "categories", label: "Categories", icon: "categories", description: "Organize your money" },
-  { id: "security", label: "Security", icon: "security", description: "Sessions & access" }
+  { id: "overview", label: "Home", icon: "overview" },
+  { id: "transactions", label: "Activity", icon: "transactions" },
+  { id: "categories", label: "Categories", icon: "categories" },
+  { id: "security", label: "Security", icon: "security" }
 ]
 
 const pageMeta = {
-  overview: { eyebrow: "Financial workspace", title: "Overview", copy: "A clear view of your money, goals and monthly plan." },
-  transactions: { eyebrow: "Money movement", title: "Transactions", copy: "Track every income and expense in one place." },
-  categories: { eyebrow: "Organization", title: "Categories", copy: "Build a structure that matches the way you spend." },
-  security: { eyebrow: "Account protection", title: "Security", copy: "Review active sessions and keep your account protected." }
+  overview: { title: "Home", copy: "Your money for the month, without the noise." },
+  transactions: { title: "Activity", copy: "Every movement in your ledger." },
+  categories: { title: "Categories", copy: "The rules behind how your money is organized." },
+  security: { title: "Security", copy: "Sessions, access and account controls." }
 }
 
 function initials(name = "User") {
@@ -69,15 +69,14 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
     <div className="dashboard-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-mark">F</div>
+          <div className="brand-mark">S</div>
           <div>
-            <strong>Finance</strong>
-            <span>Personal workspace</span>
+            <strong>Suma</strong>
+            <span>Personal ledger</span>
           </div>
         </div>
 
-        <div className="sidebar-section-label">Workspace</div>
-        <nav className="sidebar-nav" aria-label="Finance sections">
+        <nav className="sidebar-nav" aria-label="Suma sections">
           {navigation.map(item => (
             <button
               key={item.id}
@@ -85,21 +84,15 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
               type="button"
               onClick={() => setActiveView(item.id)}
             >
-              <span className="nav-icon"><Icon name={item.icon} size={19} /></span>
-              <span className="nav-copy">
-                <strong>{item.label}</strong>
-                <small>{item.description}</small>
-              </span>
-              <Icon name="chevron" size={15} className="nav-chevron" />
+              <span className="nav-icon"><Icon name={item.icon} size={18} /></span>
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
 
-        <div className="sidebar-promo">
-          <div className="promo-icon"><Icon name="sparkles" size={18} /></div>
-          <strong>Portfolio build</strong>
-          <p>Secure full-stack finance tracker with real PostgreSQL data.</p>
-          <span>v1 · Local</span>
+        <div className="sidebar-footer-note">
+          <span className="status-dot" />
+          <span>Private workspace</span>
         </div>
 
         <div className="sidebar-account">
@@ -109,7 +102,7 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
             <span>{user.email}</span>
           </div>
           <button className="icon-button logout-icon" type="button" onClick={onLogout} aria-label="Log out" title="Log out">
-            <Icon name="logout" size={18} />
+            <Icon name="logout" size={17} />
           </button>
         </div>
       </aside>
@@ -117,19 +110,15 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
       <main className="dashboard-main">
         <header className="dashboard-topbar">
           <div className="page-title-block">
-            <p className="eyebrow">{meta.eyebrow}</p>
             <h1>{meta.title}</h1>
             <p>{meta.copy}</p>
           </div>
 
           <div className="topbar-actions">
-            <div className="sync-pill"><span className="sync-dot" />Live data</div>
+            <span className="workspace-state"><span className="sync-dot" />Synced</span>
             <div className="topbar-user">
               <div className="avatar small">{initials(user.name)}</div>
-              <div>
-                <strong>{user.name.split(" ")[0]}</strong>
-                <span>Personal account</span>
-              </div>
+              <strong>{user.name.split(" ")[0]}</strong>
             </div>
           </div>
         </header>

@@ -75,7 +75,7 @@ function CategoryManager({ categories, refreshCategories, onDataChanged, onSessi
       <article className="panel category-form-panel">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Organization</p>
+            <span className="section-index">RULE</span>
             <h2>{editingId ? "Edit category" : "New category"}</h2>
           </div>
           {editingId && <button className="text-button" type="button" onClick={resetForm}>Cancel</button>}
@@ -103,7 +103,7 @@ function CategoryManager({ categories, refreshCategories, onDataChanged, onSessi
           <article className="panel" key={group.type}>
             <div className="section-heading">
               <div>
-                <p className="eyebrow">{group.type}</p>
+                <span className="section-index">{group.type.toUpperCase()}</span>
                 <h2>{group.title}</h2>
               </div>
               <span className="count-badge">{categories.filter(category => category.type === group.type).length}</span>
