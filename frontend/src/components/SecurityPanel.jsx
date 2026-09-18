@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { ApiError, apiFetch } from "../services/api"
+import Icon from "./Icon"
 
 function formatDate(value) {
   if (!value) return "—"
@@ -81,6 +82,7 @@ function SecurityPanel({ onSessionExpired, onAllSessionsRevoked }) {
   return (
     <section className="security-layout">
       <article className="panel security-summary-panel">
+        <div className="security-hero-icon"><Icon name="security" size={23} /></div>
         <p className="eyebrow">Account security</p>
         <h2>Active sessions</h2>
         <p className="security-copy">
@@ -104,6 +106,7 @@ function SecurityPanel({ onSessionExpired, onAllSessionsRevoked }) {
           <div className="session-list">
             {sessions.map(session => (
               <div className="session-row" key={session.id}>
+                <div className="session-device"><Icon name="device" size={18} /></div>
                 <div className="session-copy">
                   <div className="session-title-row">
                     <strong>{session.current ? "Current session" : "Other session"}</strong>

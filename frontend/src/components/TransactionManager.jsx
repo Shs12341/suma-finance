@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { ApiError, apiFetch } from "../services/api"
+import Icon from "./Icon"
 
 const today = new Date().toISOString().slice(0, 10)
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
@@ -170,7 +171,7 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
         </div>
 
         <div className="transaction-filters">
-          <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search transactions..." maxLength="100" />
+          <div className="search-field"><Icon name="search" size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search transactions..." maxLength="100" /></div>
           <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
             <option value="all">All types</option><option value="income">Income</option><option value="expense">Expenses</option>
           </select>
@@ -185,12 +186,12 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
             <div className="transaction-list">
               {transactions.map(transaction => (
                 <div className="transaction-row" key={transaction.id}>
-                  <div className={`transaction-icon ${transaction.type}`}>{transaction.type === "income" ? "+" : "−"}</div>
+                  <div className={`transaction-icon ${transaction.type}`}><Icon name={transaction.type === "income" ? "income" : "expense"} size={17} /></div>
                   <div className="transaction-main"><strong>{transaction.description}</strong><span>{transaction.category_name || "Uncategorized"} · {transaction.transaction_date.slice(0, 10)}</span></div>
                   <strong className={`transaction-amount ${transaction.type}`}>{transaction.type === "income" ? "+" : "−"}{money.format(transaction.amount)}</strong>
                   <div className="row-actions">
-                    <button type="button" onClick={() => startEditing(transaction)}>Edit</button>
-                    <button type="button" onClick={() => deleteTransaction(transaction.id)}>Delete</button>
+                    <button className="row-icon-button" type="button" onClick={() => startEditing(transaction)} title="Edit transaction"><Icon name="edit" size={16} /><span>Edit</span></button>
+                    <button className="row-icon-button danger" type="button" onClick={() => deleteTransaction(transaction.id)} title="Delete transaction"><Icon name="trash" size={16} /><span>Delete</span></button>
                   </div>
                 </div>
               ))}

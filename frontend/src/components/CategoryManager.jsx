@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ApiError, apiFetch } from "../services/api"
+import Icon from "./Icon"
 
 function CategoryManager({ categories, refreshCategories, onDataChanged, onSessionExpired }) {
   const [form, setForm] = useState({ name: "", type: "expense" })
@@ -111,11 +112,11 @@ function CategoryManager({ categories, refreshCategories, onDataChanged, onSessi
             <div className="category-list">
               {categories.filter(category => category.type === group.type).map(category => (
                 <div className="category-row" key={category.id}>
-                  <div className={`category-mark ${group.type}`} />
+                  <div className={`category-mark ${group.type}`}><Icon name={group.type === "income" ? "income" : "expense"} size={14} /></div>
                   <strong>{category.name}</strong>
                   <div className="row-actions">
-                    <button type="button" onClick={() => editCategory(category)}>Edit</button>
-                    <button type="button" onClick={() => deleteCategory(category)}>Delete</button>
+                    <button className="row-icon-button" type="button" onClick={() => editCategory(category)}><Icon name="edit" size={15} /><span>Edit</span></button>
+                    <button className="row-icon-button danger" type="button" onClick={() => deleteCategory(category)}><Icon name="trash" size={15} /><span>Delete</span></button>
                   </div>
                 </div>
               ))}

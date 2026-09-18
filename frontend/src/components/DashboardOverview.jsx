@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { ApiError, apiFetch } from "../services/api"
+import Icon from "./Icon"
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 const currentMonth = new Date().toISOString().slice(0, 7)
@@ -175,36 +176,37 @@ function DashboardOverview({ categories, refreshKey, onDataChanged, onSessionExp
   return (
     <section className="overview-stack">
       <div className="overview-toolbar">
-        <div>
-          <p className="eyebrow">Monthly dashboard</p>
-          <h2>Financial overview</h2>
+        <div className="overview-intro">
+          <span className="soft-kicker"><Icon name="sparkles" size={14} /> Monthly pulse</span>
+          <p>Everything important for the selected month, at a glance.</p>
         </div>
         <label className="month-control">
-          Month
+          <span><Icon name="calendar" size={15} /> Month</span>
           <input type="month" value={month} onChange={event => setMonth(event.target.value)} />
         </label>
       </div>
 
       <section className="summary-grid summary-grid-four" aria-label="Monthly financial summary">
-        <article className="summary-card">
-          <span>Balance</span>
+        <article className="summary-card summary-card-primary">
+          <div className="summary-card-top"><div className="summary-icon"><Icon name="wallet" size={19} /></div><span>Net balance</span></div>
           <strong>{money.format(summary.balance)}</strong>
-          <small>{month}</small>
+          <small>Available for {monthLabel(month)}</small>
+          <div className="summary-orb" />
         </article>
         <article className="summary-card">
-          <span>Income</span>
+          <div className="summary-card-top"><div className="summary-icon income"><Icon name="income" size={18} /></div><span>Income</span></div>
           <strong>{money.format(summary.income)}</strong>
-          <small>This month</small>
+          <small><span className="positive-dot" /> Money in this month</small>
         </article>
         <article className="summary-card">
-          <span>Expenses</span>
+          <div className="summary-card-top"><div className="summary-icon expense"><Icon name="expense" size={18} /></div><span>Expenses</span></div>
           <strong>{money.format(summary.expenses)}</strong>
-          <small>This month</small>
+          <small><span className="negative-dot" /> Money out this month</small>
         </article>
         <article className="summary-card">
-          <span>Savings rate</span>
+          <div className="summary-card-top"><div className="summary-icon savings"><Icon name="savings" size={18} /></div><span>Savings rate</span></div>
           <strong>{summary.savings_rate == null ? "—" : `${summary.savings_rate.toFixed(1)}%`}</strong>
-          <small>{summary.savings_rate == null ? "Add income to calculate" : "Income kept"}</small>
+          <small>{summary.savings_rate == null ? "Add income to calculate" : "Share of income kept"}</small>
         </article>
       </section>
 
