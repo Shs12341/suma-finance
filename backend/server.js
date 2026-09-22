@@ -1,5 +1,5 @@
 const envPath = require("./src/loadEnv")
-
+const path = require("path")
 const express = require("express")
 const cors = require("cors")
 const cookieParser = require("cookie-parser")
@@ -57,10 +57,36 @@ app.use("/api/budgets", budgetsRouter)
 app.use("/api/goals", goalsRouter)
 app.use("/api/analytics", analyticsRouter)
 
+if (process.env.NODE_ENV === "production") {
+  const frontendDist = path.join(__dirname, "..", "frontend", "dist")
+
+  app.use(express.static(frontendDist))
+
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api/")) {
+      return res.sendFile(path.join(frontendDist, "index.html"))
+    }
+
+    next()
+  })
+}
+
 app.use((req, res) => {
   res.status(404).json({ error: "Ruta no encontrada" })
 })
+if (process.env.NODE_ENV === "production") {
+  const frontendDist = path.join(__dirname, "..", "frontend", "dist")
 
+  app.use(express.static(frontendDist))
+
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api/")) {
+      return res.sendFile(path.join(frontendDist, "index.html"))
+    }
+
+    next()
+  })
+}
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error)
 
