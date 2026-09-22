@@ -1,81 +1,105 @@
-# Finance App
+# Suma
 
-Aplicación full-stack de finanzas personales construida como proyecto de portafolio.
+**A personal finance journal that explains your month instead of only showing charts.**
 
-## Checkpoint actual: Security Gate Final
+Suma is a full-stack personal finance application built as a software-engineering portfolio project. It helps users record transactions, organize spending, set budgets and savings goals, and understand how their money changed from month to month.
 
-La base financiera anterior sigue intacta. Este checkpoint cierra el hallazgo MEDIUM de la auditoría V2 y refuerza logging, resistencia a timing enumeration y consistencia concurrente de categorías.
+![Suma overview](docs/images/suma-overview.png)
 
-### Stack y producto
+## Why Suma
 
-- React + Vite
-- Node.js + Express
+Most finance dashboards stop at totals and charts. Suma adds a more human layer: a monthly **Money Story** that turns the user's real data into a short, deterministic summary of what happened during the month.
+
+The project also focuses heavily on backend ownership and security. Every financial resource is scoped to the authenticated user, sessions can be revoked server-side, and write requests are protected against common web attacks.
+
+## Highlights
+
+- Monthly overview with income, expenses, balance and six-month flow
+- Deterministic **Money Story** generated from real financial data
+- Transactions with search, type/month filters, cursor pagination and CRUD
+- Custom income and expense categories
+- Monthly budgets and savings goals
+- Multi-user data isolation enforced by the backend
+- Active-session management with individual revocation and logout-all
+- Responsive React interface with a journal/ledger visual language
+- Automated backend tests and GitHub Actions CI
+
+## Tech stack
+
+### Frontend
+- React 19
+- JavaScript
+- Vite
+- CSS
+
+### Backend
+- Node.js
+- Express 5
+- REST API
+
+### Data
 - PostgreSQL
-- Registro/login con bcrypt
-- JWT en cookie HttpOnly
-- Sesiones revocables almacenadas en PostgreSQL
-- Datos aislados por usuario
-- Transacciones, categorías, presupuestos, metas y analytics
-- Cursor pagination para transacciones
-- Gestión visible de sesiones activas
+- Parameterized SQL queries
+- Cursor pagination
 
-### Seguridad añadida
+### Security
+- bcrypt password hashing
+- JWT stored in HttpOnly cookies
+- Revocable server-side sessions using `jti`
+- CSRF tokens bound to the active session
+- Exact Origin validation for browser writes
+- Login/register rate limiting
+- Server-side input validation
+- Security headers and body-size limits
+- Structured/redacted security logging
 
-- logout con revocación real del token emitido
-- cerrar todas las sesiones
-- revocar sesiones individuales
-- CSRF token ligado a la sesión
-- validación estricta de Origin para escrituras del navegador
-- rate limiting de login/register
-- validación server-side alineada con PostgreSQL
-- límites de paginación
-- headers de seguridad
-- `X-Powered-By` deshabilitado
-- manejo uniforme de errores de entrada
-- pruebas unitarias de controles de seguridad
-- logging estructurado y redactado con request IDs
-- comparación bcrypt de trabajo constante para usuarios inexistentes
-- protección de integridad ante delete/create concurrente de categorías
-
-Más detalles: `SECURITY.md` y `docs/security/HARDENING_CHECKPOINT.md`.
-
-## Actualizar desde el checkpoint anterior
-
-Tu configuración local continúa fuera del proyecto:
+## Architecture
 
 ```text
-C:\Users\TU_USUARIO\.finance-app.env
+Browser / React
+      |
+      | HTTP + JSON
+      v
+Express API
+      |
+      | authentication / authorization / validation
+      v
+PostgreSQL
 ```
 
-Después de reemplazar la carpeta por este ZIP ejecuta:
+The frontend never decides resource ownership. Authenticated identity is derived by the backend from the validated session (`req.user.id`) and is used to scope database queries.
+
+## Local setup
+
+### Requirements
+
+- Node.js 22+
+- npm
+- PostgreSQL
+
+Local secrets are intentionally stored outside the repository. On the original Windows development environment the configuration file lives at:
+
+```text
+C:\Users\<USER>\.finance-app.env
+```
+
+After configuring the environment, run:
 
 ```powershell
-cd C:\Users\yessy\finance-app
 .\setup-local.ps1
-```
-
-El script conserva `.finance-app.env`, instala dependencias y aplica todas las migraciones SQL, incluida:
-
-```text
-backend/sql/003_security_hardening.sql
-backend/sql/004_security_gate_final.sql
-```
-
-Luego inicia:
-
-```powershell
 .\start-dev.ps1
 ```
 
-Frontend: `http://localhost:5173`
+Development URLs:
 
-Backend: `http://localhost:3000`
+```text
+Frontend  http://localhost:5173
+Backend   http://localhost:3000
+```
 
-> Este checkpoint cambia el formato de sesión. Las cookies/JWT emitidas por checkpoints anteriores se consideran inválidas una vez actualizado el backend. Esto cierra la sesión anterior, pero no borra usuarios ni datos.
+## Database
 
-## Base de datos
-
-Tablas principales:
+Main tables:
 
 ```text
 users
@@ -86,72 +110,36 @@ savings_goals
 auth_sessions
 ```
 
-Migraciones:
-
-```text
-backend/sql/001_initial_schema.sql
-backend/sql/002_financial_core.sql
-backend/sql/003_security_hardening.sql
-backend/sql/004_security_gate_final.sql
-```
-
-`setup-local.ps1` aplica todos los `.sql` en orden y las migraciones son idempotentes.
-
-## API principal
-
-```text
-GET    /api/health
-
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/logout
-POST   /api/auth/logout-all
-GET    /api/auth/me
-GET    /api/auth/csrf
-GET    /api/auth/sessions
-DELETE /api/auth/sessions/:id
-
-GET    /api/categories?limit=100&offset=0
-POST   /api/categories
-PATCH  /api/categories/:id
-DELETE /api/categories/:id
-
-GET    /api/transactions?limit=30&cursor=...&type=expense&month=YYYY-MM&search=...
-POST   /api/transactions
-PATCH  /api/transactions/:id
-DELETE /api/transactions/:id
-
-GET    /api/budgets?month=YYYY-MM
-POST   /api/budgets
-DELETE /api/budgets/:id
-
-GET    /api/goals?limit=50&offset=0
-POST   /api/goals
-PATCH  /api/goals/:id
-DELETE /api/goals/:id
-
-GET    /api/analytics?month=YYYY-MM&months=6
-```
-
-Todas las rutas financieras requieren una sesión activa y filtran por `req.user.id`. Los métodos de escritura protegidos también requieren `X-CSRF-Token`.
+Migrations are stored in `backend/sql/` and are applied by `setup-local.ps1`.
 
 ## Tests
 
-Desde backend:
+Backend tests cover validation, pagination, CSRF/session binding and rate limiting.
 
 ```powershell
 cd backend
 npm test
 ```
 
-Actualmente cubren validación de calendario, dinero, payloads inesperados, paginación, CSRF y rate limiting.
+Frontend checks:
 
-## Auditoría
-
-El informe pre-hardening está preservado en:
-
-```text
-docs/security/SECURITY_AUDIT_BASELINE.md
+```powershell
+cd frontend
+npm run lint
+npm run build
 ```
 
-La auditoría V2 también está preservada en `docs/security/SECURITY_AUDIT_V2.md`. El siguiente paso es un retest final corto para cerrar Security v1 antes del despliegue y la preparación de CV/GitHub.
+The same checks run automatically through `.github/workflows/ci.yml` on pushes and pull requests to `main`.
+
+## Security notes
+
+The repository includes the security hardening notes and audit history used while building the project:
+
+- `SECURITY.md`
+- `docs/security/SECURITY_AUDIT_BASELINE.md`
+- `docs/security/SECURITY_AUDIT_V2.md`
+- `docs/security/HARDENING_CHECKPOINT.md`
+
+## Status
+
+Suma is currently being prepared for a public portfolio deployment. The next delivery step is deployment and adding the live demo URL to this README.
