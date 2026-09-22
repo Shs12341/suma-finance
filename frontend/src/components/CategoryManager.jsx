@@ -78,8 +78,8 @@ function CategoryManager({ categories, refreshCategories, onDataChanged, onSessi
 
   return (
     <>
-      <section className="category-layout">
-        <article className="panel category-form-panel friendly-form-panel">
+      <section className="category-layout journal-page">
+        <article className="panel category-form-panel friendly-form-panel journal-form-panel">
           <div className="section-heading friendly-heading">
             <div>
               <span className="eyebrow">Keep things tidy</span>

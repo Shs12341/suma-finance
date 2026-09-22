@@ -7,15 +7,15 @@ import SecurityPanel from "./SecurityPanel"
 import Icon from "./Icon"
 
 const navigation = [
-  { id: "overview", label: "Home", icon: "overview" },
-  { id: "transactions", label: "Activity", icon: "transactions" },
+  { id: "overview", label: "Overview", icon: "overview" },
+  { id: "transactions", label: "Transactions", icon: "transactions" },
   { id: "categories", label: "Categories", icon: "categories" },
   { id: "security", label: "Security", icon: "security" }
 ]
 
 const pageMeta = {
-  overview: { title: "Home", copy: "Here’s how your month is going." },
-  transactions: { title: "Activity", copy: "Add something in seconds, find anything later." },
+  overview: { title: "Overview", copy: "A clear monthly record of your money." },
+  transactions: { title: "Transactions", copy: "Add something in seconds, find anything later." },
   categories: { title: "Categories", copy: "Keep your money organized in a way that feels natural." },
   security: { title: "Security", copy: "See where you’re signed in and stay in control." }
 }
@@ -69,10 +69,10 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
     <div className="dashboard-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark journal-brand-mark"><span className="brand-leaf" /></div>
           <div>
             <strong>Suma</strong>
-            <span>Your money, made clearer</span>
+            <span>Your monthly money journal</span>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ function FinanceDashboard({ user, onLogout, onSessionExpired, onAllSessionsRevok
 
         <div className="sidebar-footer-note">
           <span className="status-dot" />
-          <span>Private and synced</span>
+          <span>Private by design</span>
         </div>
 
         <div className="sidebar-account">

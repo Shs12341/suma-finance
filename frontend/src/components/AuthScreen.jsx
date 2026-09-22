@@ -54,22 +54,22 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
       <section className="auth-layout">
         <div className="auth-showcase">
           <div className="auth-brand">
-            <div className="brand-mark light">S</div>
-            <div><strong>Suma</strong><span>Your money, made clearer</span></div>
+            <div className="brand-mark journal-brand-mark"><span className="brand-leaf" /></div>
+            <div><strong>Suma</strong><span>Your monthly money journal</span></div>
           </div>
 
           <div className="auth-intro">
-            <p className="auth-kicker">A calmer way to keep track.</p>
-            <h1>Know where your money is going without making it a chore.</h1>
+            <p className="auth-kicker">A monthly record, not another dashboard.</p>
+            <h1>See the story behind your money, month by month.</h1>
             <p className="auth-copy">
-              See what came in, what went out and what you’re saving for — all in a place that stays easy to read.
+              Keep transactions, goals and spending patterns in one calm place — then let Suma show you what actually changed.
             </p>
           </div>
 
           <div className="statement-preview" aria-hidden="true">
             <div className="statement-head">
               <div>
-                <span>September balance</span>
+                <span>September story</span>
                 <strong>$4,820.40</strong>
               </div>
               <span className="statement-period">SEP 2026</span>
@@ -86,7 +86,7 @@ function AuthScreen({ onAuthenticated, initialError = "" }) {
             </div>
           </div>
 
-          <p className="auth-footnote">Private by default · simple enough to use every day</p>
+          <p className="auth-footnote">Private by design · built to be useful every month</p>
         </div>
 
         <div className="auth-form-side">

@@ -142,13 +142,13 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
 
   return (
     <>
-      <section className="workspace transaction-workspace">
-        <article className="panel form-panel sticky-panel friendly-form-panel">
+      <section className="workspace transaction-workspace journal-page">
+        <article className="panel form-panel sticky-panel friendly-form-panel journal-form-panel">
           <div className="section-heading friendly-heading">
             <div>
-              <span className="eyebrow">{editingId ? "Updating a movement" : "Quick add"}</span>
-              <h2>{editingId ? "Edit transaction" : "Add a transaction"}</h2>
-              <p>{editingId ? "Change only what you need." : "A few details and you’re done."}</p>
+              <span className="eyebrow">{editingId ? "Editing your journal" : "New journal entry"}</span>
+              <h2>{editingId ? "Edit transaction" : "Add transaction"}</h2>
+              <p>{editingId ? "Change only what you need." : "Record it now so the month stays clear."}</p>
             </div>
             {editingId && <button className="text-button" type="button" onClick={resetForm}>Cancel edit</button>}
           </div>
@@ -191,12 +191,12 @@ function TransactionManager({ categories, onDataChanged, onSessionExpired }) {
           {error && <p className="error-message">{error}</p>}
         </article>
 
-        <article className="panel transactions-panel activity-panel">
+        <article className="panel transactions-panel activity-panel journal-list-panel">
           <div className="section-heading friendly-heading activity-heading">
             <div>
               <span className="eyebrow">Your history</span>
-              <h2>Activity</h2>
-              <p>Everything that moved, all in one place.</p>
+              <h2>Transaction history</h2>
+              <p>Search, filter and edit everything that moved.</p>
             </div>
             <span className="count-badge">{transactions.length} shown</span>
           </div>

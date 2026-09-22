@@ -84,7 +84,7 @@ function SecurityPanel({ onSessionExpired, onAllSessionsRevoked }) {
 
   return (
     <>
-      <section className="security-layout">
+      <section className="security-layout journal-page">
         <article className="panel security-summary-panel friendly-security-summary">
           <div className="security-hero-icon"><Icon name="security" size={22} /></div>
           <span className="eyebrow">Account access</span>
