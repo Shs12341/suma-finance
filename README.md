@@ -1,4 +1,9 @@
 # Suma
+## Live Demo
+
+**[Try Suma](https://suma-finance.onrender.com)**
+
+A full-stack personal finance application built with React, Node.js, Express and PostgreSQL.
 
 **A personal finance journal that explains your month instead of only showing charts.**
 
@@ -142,4 +147,4 @@ The repository includes the security hardening notes and audit history used whil
 
 ## Status
 
-Suma is currently being prepared for a public portfolio deployment. The next delivery step is deployment and adding the live demo URL to this README.
+Suma is deployed publicly on Render with a Neon-hosted PostgreSQL database.
